@@ -9,6 +9,7 @@ import {
   sunnyOutline,
   trendingUpOutline,
   trophyOutline,
+  waterOutline,
 } from 'ionicons/icons'
 
 export interface NavItem {
@@ -25,6 +26,7 @@ export const desktopNavItems: NavItem[] = [
   { label: 'Календарь', to: '/calendar', icon: calendarOutline },
   { label: 'Прогресс', to: '/progress', icon: trendingUpOutline },
   { label: 'Привычки', to: '/habits', icon: checkmarkCircleOutline },
+  { label: 'Цикл', to: '/cycle', icon: waterOutline },
   { label: 'Аналитика', to: '/analytics', icon: statsChartOutline },
   { label: 'Достижения', to: '/achievements', icon: trophyOutline },
   { label: 'Настройки', to: '/settings', icon: settingsOutline },

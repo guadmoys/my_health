@@ -4,8 +4,10 @@ import dayjs from 'dayjs'
 import { computed, ref } from 'vue'
 
 import { useLiveQuery } from '@/composables/useLiveQuery'
-import { dailyStatsRepository, profileRepository, settingsRepository, wellbeingRepository } from '@/database/repositories'
-import type { DailyStats, WellbeingLog } from '@/database/types'
+import { cycleRepository, dailyStatsRepository, profileRepository, settingsRepository, wellbeingRepository } from '@/database/repositories'
+import type { CycleLog, DailyStats, WellbeingLog } from '@/database/types'
+import { computeCycleStats } from '@/modules/cycle/cycle-stats'
+import { today } from '@/utils/date'
 import { currentWeekRange, periodOptions, periodRange, type Period } from '@/utils/period'
 import { average, formatMinutes, sum } from '@/utils/stats'
 
@@ -97,6 +99,16 @@ const habitsPercent = computed(() => {
 const avgEnergy = computed(() => average(wellbeingLogs.value, (w) => w.energy))
 const avgMood = computed(() => average(wellbeingLogs.value, (w) => w.mood))
 const avgFatigue = computed(() => average(wellbeingLogs.value, (w) => w.fatigue))
+
+// --- Cycle (§ menstrual cycle tracking): overall stats from all-time logs, ---
+// --- but pain/mood averages scoped to the selected period like everything else. ---
+const cycleLogs = useLiveQuery(() => cycleRepository.getAll(), [] as CycleLog[])
+const cycleStats = computed(() => computeCycleStats(cycleLogs.value, today()))
+const periodCycleLogs = computed(() =>
+  cycleLogs.value.filter((l) => l.date >= range.value.from && l.date <= range.value.to),
+)
+const avgCyclePain = computed(() => average(periodCycleLogs.value, (l) => l.pain))
+const avgCycleMood = computed(() => average(periodCycleLogs.value, (l) => l.mood))
 
 function fmt(n: number | undefined, digits = 0): string {
   return n === undefined ? '—' : n.toFixed(digits)
@@ -209,6 +221,18 @@ function fmt(n: number | undefined, digits = 0): string {
           <p v-if="avgEnergy !== undefined">Энергия: {{ fmt(avgEnergy, 1) }}/5</p>
           <p v-if="avgMood !== undefined">Настроение: {{ fmt(avgMood, 1) }}/5</p>
           <p v-if="avgFatigue !== undefined">Усталость: {{ fmt(avgFatigue, 1) }}/5</p>
+        </IonCardContent>
+      </IonCard>
+
+      <IonCard v-if="cycleStats.avgCycleLengthDays !== undefined || avgCyclePain !== undefined || avgCycleMood !== undefined">
+        <IonCardHeader>
+          <IonCardTitle>Цикл</IonCardTitle>
+        </IonCardHeader>
+        <IonCardContent>
+          <p v-if="cycleStats.avgCycleLengthDays !== undefined">Средняя длина цикла: {{ cycleStats.avgCycleLengthDays }} дн.</p>
+          <p v-if="cycleStats.avgPeriodLengthDays !== undefined">Средняя длина менструации: {{ cycleStats.avgPeriodLengthDays }} дн.</p>
+          <p v-if="avgCyclePain !== undefined">Боль (за период): {{ fmt(avgCyclePain, 1) }}/5</p>
+          <p v-if="avgCycleMood !== undefined">Настроение в цикле (за период): {{ fmt(avgCycleMood, 1) }}/5</p>
         </IonCardContent>
       </IonCard>
     </IonContent>

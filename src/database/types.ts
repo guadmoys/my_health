@@ -346,6 +346,22 @@ export interface DailyStats {
   habitsPlanned?: number
 }
 
+// --- Menstrual cycle tracking ---
+
+export type CycleFlow = 'spotting' | 'light' | 'medium' | 'heavy'
+
+export interface CycleLog {
+  id: string
+  date: DateString
+  /** Presence of a flow value marks this as a period day. */
+  flow?: CycleFlow
+  pain?: 1 | 2 | 3 | 4 | 5
+  /** "Радость" / mood. */
+  mood?: 1 | 2 | 3 | 4 | 5
+  cravings?: string
+  note?: string
+}
+
 // --- Settings (§33, Таблица 32) ---
 
 export interface Setting {

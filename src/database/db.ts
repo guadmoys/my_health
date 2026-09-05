@@ -4,6 +4,7 @@ import type {
   Achievement,
   ActivityLog,
   BodyMeasurement,
+  CycleLog,
   DailyStats,
   Exercise,
   ExerciseSession,
@@ -54,6 +55,7 @@ export class VitaDatabase extends Dexie {
   sleepLogs!: EntityTable<SleepLog, 'id'>
   activityLogs!: EntityTable<ActivityLog, 'id'>
   wellbeingLogs!: EntityTable<WellbeingLog, 'id'>
+  cycleLogs!: EntityTable<CycleLog, 'id'>
   habits!: EntityTable<Habit, 'id'>
   habitLogs!: EntityTable<HabitLog, 'id'>
   notes!: EntityTable<Note, 'id'>
@@ -91,6 +93,7 @@ export class VitaDatabase extends Dexie {
       sleepLogs: 'id, date',
       activityLogs: 'id, date, type',
       wellbeingLogs: 'id, date',
+      cycleLogs: 'id, date',
       habits: 'id, active',
       habitLogs: 'id, habitId, date, [habitId+date]',
       notes: 'id, date',

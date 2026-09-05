@@ -60,6 +60,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/modules/motivation/AchievementsView.vue'),
   },
   {
+    path: '/cycle',
+    name: 'cycle',
+    component: () => import('@/modules/cycle/CycleView.vue'),
+  },
+  {
     path: '/more',
     name: 'more',
     component: () => import('@/app/MoreView.vue'),

@@ -1,5 +1,6 @@
 export { achievementRepository } from './achievement.repository'
 export { activityRepository } from './activity.repository'
+export { cycleRepository } from './cycle.repository'
 export { dailyStatsRepository } from './daily-stats.repository'
 export { exerciseRepository } from './exercise.repository'
 export { foodRepository, recipeRepository } from './food.repository'

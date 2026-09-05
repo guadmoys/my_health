@@ -1,10 +1,12 @@
 import {
+  cycleRepository,
   dailyStatsRepository,
   habitRepository,
   settingsRepository,
   wellbeingRepository,
   workoutSessionRepository,
 } from '@/database/repositories'
+import { computeCycleStats, isWithinFertileWindow } from '@/modules/cycle/cycle-stats'
 import { today } from '@/utils/date'
 
 /**
@@ -38,10 +40,12 @@ export async function dismissRule(rule: Pick<Rule, 'id' | 'period'>): Promise<vo
 
 export async function evaluateRules(): Promise<Rule[]> {
   const date = today()
-  const [wellbeingToday, activeSession, activeHabits, hidden] = await Promise.all([
+  const [wellbeingToday, activeSession, activeHabits, cycleToday, cycleLogs, hidden] = await Promise.all([
     wellbeingRepository.getByDate(date),
     workoutSessionRepository.getActive(),
     habitRepository.getActive(),
+    cycleRepository.getByDate(date),
+    cycleRepository.getAll(),
     dismissedIds(),
   ])
 
@@ -80,6 +84,41 @@ export async function evaluateRules(): Promise<Rule[]> {
         text: `Осталось привычек на сегодня: ${remaining}`,
       })
     }
+  }
+
+  // Cycle pain uses the same safety framing as general discomfort (§3, §16),
+  // and is a separate signal — someone may log high cycle pain without
+  // toggling the general wellbeing discomfort checkbox.
+  if (cycleToday?.pain !== undefined && cycleToday.pain >= 4) {
+    rules.push({
+      id: 'cycle-pain-no-progression',
+      priority: 100,
+      period: 'day',
+      text: 'Отмечена сильная боль — не увеличивайте нагрузку, при необходимости отдохните.',
+    })
+  }
+
+  const cycleStats = computeCycleStats(cycleLogs, date)
+  if (cycleStats.predictedNextPeriod) {
+    const daysUntilPeriod = Math.round(
+      (new Date(cycleStats.predictedNextPeriod).getTime() - new Date(date).getTime()) / 86_400_000,
+    )
+    if (daysUntilPeriod >= 0 && daysUntilPeriod <= 2) {
+      rules.push({
+        id: 'cycle-period-soon',
+        priority: 15,
+        period: 'day',
+        text: 'По оценке на основе ваших записей, скоро ожидается начало цикла.',
+      })
+    }
+  }
+  if (isWithinFertileWindow(cycleStats, date)) {
+    rules.push({
+      id: 'cycle-fertile-window',
+      priority: 15,
+      period: 'day',
+      text: 'По оценке на основе ваших записей, сейчас возможное фертильное окно.',
+    })
   }
 
   const stepsGoal = await settingsRepository.getValue<number | null>('stepsGoal', null)

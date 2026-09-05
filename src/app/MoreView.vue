@@ -17,12 +17,14 @@ import {
   settingsOutline,
   statsChartOutline,
   trophyOutline,
+  waterOutline,
 } from 'ionicons/icons'
 
 const links = [
   { label: 'Тренировки', to: '/workouts', icon: barbellOutline },
   { label: 'Календарь', to: '/calendar', icon: calendarOutline },
   { label: 'Привычки', to: '/habits', icon: checkmarkCircleOutline },
+  { label: 'Цикл', to: '/cycle', icon: waterOutline },
   { label: 'Аналитика', to: '/analytics', icon: statsChartOutline },
   { label: 'Достижения', to: '/achievements', icon: trophyOutline },
   { label: 'Настройки', to: '/settings', icon: settingsOutline },
