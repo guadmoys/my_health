@@ -13,10 +13,12 @@
     "typecheck": "vue-tsc -b --noEmit"
   },
   "dependencies": {
+    "@ionic/vue": "^9.0.2",
+    "@ionic/vue-router": "^9.0.2",
     "dayjs": "^1.11.23",
     "dexie": "^4.4.5",
     "echarts": "^6.1.0",
-    "naive-ui": "^2.45.3",
+    "ionicons": "^8.1.0",
     "pinia": "^4.0.3",
     "vue": "^3.5.41",
     "vue-router": "^5.3.1",

@@ -1,9 +1,26 @@
 <script setup lang="ts">
-import { useMessage } from 'naive-ui'
+import {
+  IonButton,
+  IonCard,
+  IonCardContent,
+  IonCardHeader,
+  IonCardTitle,
+  IonCheckbox,
+  IonContent,
+  IonHeader,
+  IonInput,
+  IonItem,
+  IonPage,
+  IonText,
+  IonTitle,
+  IonToolbar,
+} from '@ionic/vue'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { presentQuickAdd } from '@/components/layout/quick-add'
 import { useLiveQuery } from '@/composables/useLiveQuery'
+import { useToast } from '@/composables/useToast'
 import {
   activityRepository,
   dailyStatsRepository,
@@ -15,13 +32,11 @@ import {
   wellbeingRepository,
   workoutSessionRepository,
 } from '@/database/repositories'
-import { useUiStore } from '@/stores/ui.store'
 import { nowIso, today } from '@/utils/date'
 import { createId } from '@/utils/id'
 
 const router = useRouter()
-const message = useMessage()
-const ui = useUiStore()
+const toast = useToast()
 
 const date = today()
 
@@ -47,29 +62,31 @@ const ratingScale = [1, 2, 3, 4, 5] as const
 // --- Water ---
 async function addWater(amountMl: number) {
   await waterRepository.add({ id: createId(), date, amountMl, createdAt: nowIso() })
-  message.success(`+${amountMl} мл воды`)
+  await toast.success(`+${amountMl} мл воды`)
 }
 
 // --- Sleep (quick manual entry, §18) ---
-const sleepHoursInput = ref<number | null>(null)
+const sleepHoursInput = ref<string | number | null>(null)
 async function logSleep() {
-  if (!sleepHoursInput.value) return
+  const hours = Number(sleepHoursInput.value)
+  if (!hours) return
   await sleepRepository.add({
     id: createId(),
     date,
-    durationMinutes: Math.round(sleepHoursInput.value * 60),
+    durationMinutes: Math.round(hours * 60),
   })
   sleepHoursInput.value = null
-  message.success('Сон записан')
+  await toast.success('Сон записан')
 }
 
 // --- Activity (manual steps, §19) ---
-const stepsInput = ref<number | null>(null)
+const stepsInput = ref<string | number | null>(null)
 async function logSteps() {
-  if (!stepsInput.value) return
-  await activityRepository.add({ id: createId(), date, type: 'steps', value: stepsInput.value })
+  const steps = Number(stepsInput.value)
+  if (!steps) return
+  await activityRepository.add({ id: createId(), date, type: 'steps', value: steps })
   stepsInput.value = null
-  message.success('Шаги записаны')
+  await toast.success('Шаги записаны')
 }
 
 // --- Wellbeing (§20 — must take 5-10 seconds) ---
@@ -114,123 +131,233 @@ const showRestSuggestion = computed(() => wellbeing.value?.discomfort === true)
 </script>
 
 <template>
-  <n-flex vertical :size="16" style="max-width: 720px; margin: 0 auto">
-    <n-card title="Цель" size="small">
-      <template v-if="primaryGoal">
-        <n-text strong>{{ primaryGoal.title }}</n-text>
-        <div v-if="primaryGoal.description">
-          <n-text depth="3">{{ primaryGoal.description }}</n-text>
+  <IonPage>
+    <IonHeader>
+      <IonToolbar>
+        <IonTitle>Сегодня</IonTitle>
+      </IonToolbar>
+    </IonHeader>
+    <IonContent class="ion-padding">
+      <div class="today-stack">
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Цель</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <template v-if="primaryGoal">
+              <p><strong>{{ primaryGoal.title }}</strong></p>
+              <p v-if="primaryGoal.description">{{ primaryGoal.description }}</p>
+            </template>
+            <p v-else>Активная цель не выбрана.</p>
+          </IonCardContent>
+        </IonCard>
+
+        <IonCard>
+          <IonCardContent>{{ nextAction }}</IonCardContent>
+        </IonCard>
+
+        <IonCard v-if="showRestSuggestion" color="warning">
+          <IonCardContent>
+            Отмечен дискомфорт — не увеличивайте нагрузку сегодня, при необходимости снизьте её или отдохните.
+          </IonCardContent>
+        </IonCard>
+
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Питание</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <template v-if="nutritionMode === 'hidden' || nutritionMode === 'simplified'">
+              <p>Приёмов пищи сегодня: {{ mealCount }}</p>
+            </template>
+            <div v-else class="stat-row">
+              <div class="stat">
+                <IonText color="medium"><p>Ккал</p></IonText>
+                <p class="stat__value">{{ dailyStats?.calories ?? 0 }}</p>
+              </div>
+              <div class="stat">
+                <IonText color="medium"><p>Белки</p></IonText>
+                <p class="stat__value">{{ dailyStats?.protein ?? 0 }}</p>
+              </div>
+              <div class="stat">
+                <IonText color="medium"><p>Жиры</p></IonText>
+                <p class="stat__value">{{ dailyStats?.fat ?? 0 }}</p>
+              </div>
+              <div class="stat">
+                <IonText color="medium"><p>Углеводы</p></IonText>
+                <p class="stat__value">{{ dailyStats?.carbs ?? 0 }}</p>
+              </div>
+            </div>
+            <IonButton fill="clear" size="small" @click="router.push('/nutrition')">Открыть дневник питания →</IonButton>
+          </IonCardContent>
+        </IonCard>
+
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Вода</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <p class="stat__value">{{ waterMl }} мл</p>
+            <div class="button-row">
+              <IonButton v-for="amount in [150, 250, 330, 500]" :key="amount" size="small" fill="outline" @click="addWater(amount)">
+                +{{ amount }} мл
+              </IonButton>
+            </div>
+          </IonCardContent>
+        </IonCard>
+
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Сон</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <p v-if="dailyStats?.sleepMinutes">
+              Сегодня: {{ Math.floor(dailyStats.sleepMinutes / 60) }} ч {{ dailyStats.sleepMinutes % 60 }} мин
+            </p>
+            <p v-else>Ещё не записан.</p>
+            <IonItem lines="none" class="inline-input">
+              <IonInput
+                v-model="sleepHoursInput"
+                type="number"
+                placeholder="Часов"
+                :min="0"
+                :max="24"
+                step="0.5"
+              />
+              <IonButton slot="end" size="small" :disabled="!sleepHoursInput" @click="logSleep">Записать</IonButton>
+            </IonItem>
+          </IonCardContent>
+        </IonCard>
+
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Активность</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <p v-if="dailyStats?.steps">Шаги сегодня: {{ dailyStats.steps }}</p>
+            <p v-else>Шаги ещё не записаны.</p>
+            <IonItem lines="none" class="inline-input">
+              <IonInput v-model="stepsInput" type="number" placeholder="Шаги" :min="0" />
+              <IonButton slot="end" size="small" :disabled="!stepsInput" @click="logSteps">Записать</IonButton>
+            </IonItem>
+          </IonCardContent>
+        </IonCard>
+
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Тренировка</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <p v-if="activeSession">Есть незавершённая тренировка.</p>
+            <p v-else>Тренировка на сегодня не начата.</p>
+            <IonButton size="small" fill="outline" @click="router.push('/workouts')">Перейти к тренировкам →</IonButton>
+          </IonCardContent>
+        </IonCard>
+
+        <IonCard>
+          <IonCardHeader>
+            <IonCardTitle>Самочувствие</IonCardTitle>
+          </IonCardHeader>
+          <IonCardContent>
+            <div class="rating-row">
+              <span class="rating-row__label">Энергия</span>
+              <IonButton
+                v-for="v in ratingScale"
+                :key="v"
+                size="small"
+                :fill="wellbeing?.energy === v ? 'solid' : 'outline'"
+                @click="setWellbeingRating('energy', v)"
+              >
+                {{ v }}
+              </IonButton>
+            </div>
+            <div class="rating-row">
+              <span class="rating-row__label">Настроение</span>
+              <IonButton
+                v-for="v in ratingScale"
+                :key="v"
+                size="small"
+                :fill="wellbeing?.mood === v ? 'solid' : 'outline'"
+                @click="setWellbeingRating('mood', v)"
+              >
+                {{ v }}
+              </IonButton>
+            </div>
+            <div class="rating-row">
+              <span class="rating-row__label">Усталость</span>
+              <IonButton
+                v-for="v in ratingScale"
+                :key="v"
+                size="small"
+                :fill="wellbeing?.fatigue === v ? 'solid' : 'outline'"
+                @click="setWellbeingRating('fatigue', v)"
+              >
+                {{ v }}
+              </IonButton>
+            </div>
+            <IonItem lines="none">
+              <IonCheckbox :checked="wellbeing?.discomfort ?? false" @ion-change="toggleDiscomfort">
+                Дискомфорт / боль
+              </IonCheckbox>
+            </IonItem>
+          </IonCardContent>
+        </IonCard>
+
+        <div class="button-row" style="justify-content: center">
+          <IonButton @click="presentQuickAdd(router)">+ Быстрое действие</IonButton>
         </div>
-      </template>
-      <n-text v-else depth="3">Активная цель не выбрана.</n-text>
-    </n-card>
-
-    <n-card size="small">
-      <n-text>{{ nextAction }}</n-text>
-    </n-card>
-
-    <n-card v-if="showRestSuggestion" size="small" :bordered="true">
-      <n-text type="warning">
-        Отмечен дискомфорт — не увеличивайте нагрузку сегодня, при необходимости снизьте её или отдохните.
-      </n-text>
-    </n-card>
-
-    <n-card title="Питание" size="small">
-      <template v-if="nutritionMode === 'hidden' || nutritionMode === 'simplified'">
-        <n-text>Приёмов пищи сегодня: {{ mealCount }}</n-text>
-      </template>
-      <template v-else>
-        <n-flex :size="16">
-          <n-statistic label="Ккал" :value="dailyStats?.calories ?? 0" />
-          <n-statistic label="Белки" :value="dailyStats?.protein ?? 0" />
-          <n-statistic label="Жиры" :value="dailyStats?.fat ?? 0" />
-          <n-statistic label="Углеводы" :value="dailyStats?.carbs ?? 0" />
-        </n-flex>
-      </template>
-      <n-button text style="margin-top: 8px" @click="router.push('/nutrition')">Открыть дневник питания →</n-button>
-    </n-card>
-
-    <n-card title="Вода" size="small">
-      <n-statistic label="Сегодня" :value="waterMl" suffix=" мл" />
-      <n-flex style="margin-top: 12px">
-        <n-button v-for="amount in [150, 250, 330, 500]" :key="amount" size="small" @click="addWater(amount)">
-          +{{ amount }} мл
-        </n-button>
-      </n-flex>
-    </n-card>
-
-    <n-card title="Сон" size="small">
-      <n-text v-if="dailyStats?.sleepMinutes">
-        Сегодня: {{ Math.floor(dailyStats.sleepMinutes / 60) }} ч {{ dailyStats.sleepMinutes % 60 }} мин
-      </n-text>
-      <n-text v-else depth="3">Ещё не записан.</n-text>
-      <n-flex align="center" style="margin-top: 12px" :size="8">
-        <n-input-number v-model:value="sleepHoursInput" placeholder="Часов" :min="0" :max="24" :step="0.5" style="width: 120px" />
-        <n-button size="small" :disabled="!sleepHoursInput" @click="logSleep">Записать</n-button>
-      </n-flex>
-    </n-card>
-
-    <n-card title="Активность" size="small">
-      <n-text v-if="dailyStats?.steps">Шаги сегодня: {{ dailyStats.steps }}</n-text>
-      <n-text v-else depth="3">Шаги ещё не записаны.</n-text>
-      <n-flex align="center" style="margin-top: 12px" :size="8">
-        <n-input-number v-model:value="stepsInput" placeholder="Шаги" :min="0" style="width: 140px" />
-        <n-button size="small" :disabled="!stepsInput" @click="logSteps">Записать</n-button>
-      </n-flex>
-    </n-card>
-
-    <n-card title="Тренировка" size="small">
-      <n-text v-if="activeSession" type="warning">Есть незавершённая тренировка.</n-text>
-      <n-text v-else depth="3">Тренировка на сегодня не начата.</n-text>
-      <n-button style="margin-top: 8px" size="small" @click="router.push('/workouts')">Перейти к тренировкам →</n-button>
-    </n-card>
-
-    <n-card title="Самочувствие" size="small">
-      <n-flex vertical :size="8">
-        <n-flex align="center" :size="8">
-          <n-text style="width: 80px">Энергия</n-text>
-          <n-button
-            v-for="v in ratingScale"
-            :key="v"
-            size="tiny"
-            :type="wellbeing?.energy === v ? 'primary' : 'default'"
-            @click="setWellbeingRating('energy', v)"
-          >
-            {{ v }}
-          </n-button>
-        </n-flex>
-        <n-flex align="center" :size="8">
-          <n-text style="width: 80px">Настроение</n-text>
-          <n-button
-            v-for="v in ratingScale"
-            :key="v"
-            size="tiny"
-            :type="wellbeing?.mood === v ? 'primary' : 'default'"
-            @click="setWellbeingRating('mood', v)"
-          >
-            {{ v }}
-          </n-button>
-        </n-flex>
-        <n-flex align="center" :size="8">
-          <n-text style="width: 80px">Усталость</n-text>
-          <n-button
-            v-for="v in ratingScale"
-            :key="v"
-            size="tiny"
-            :type="wellbeing?.fatigue === v ? 'primary' : 'default'"
-            @click="setWellbeingRating('fatigue', v)"
-          >
-            {{ v }}
-          </n-button>
-        </n-flex>
-        <n-checkbox :checked="wellbeing?.discomfort ?? false" @update:checked="toggleDiscomfort">
-          Дискомфорт / боль
-        </n-checkbox>
-      </n-flex>
-    </n-card>
-
-    <n-flex justify="center">
-      <n-button type="primary" @click="ui.openQuickAdd()">+ Быстрое действие</n-button>
-    </n-flex>
-  </n-flex>
+      </div>
+    </IonContent>
+  </IonPage>
 </template>
+
+<style scoped>
+.today-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.stat-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.stat p {
+  margin: 0;
+}
+
+.stat__value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.button-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.rating-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.rating-row__label {
+  width: 90px;
+  flex-shrink: 0;
+}
+
+.inline-input {
+  margin-top: 12px;
+  --padding-start: 0;
+}
+</style>

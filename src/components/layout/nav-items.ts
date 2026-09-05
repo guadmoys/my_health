@@ -1,3 +1,15 @@
+import {
+  barbellOutline,
+  calendarOutline,
+  checkmarkCircleOutline,
+  ellipsisHorizontalOutline,
+  restaurantOutline,
+  settingsOutline,
+  statsChartOutline,
+  sunnyOutline,
+  trendingUpOutline,
+} from 'ionicons/icons'
+
 export interface NavItem {
   label: string
   to: string
@@ -6,20 +18,20 @@ export interface NavItem {
 
 /** Desktop left nav (Таблица 6). */
 export const desktopNavItems: NavItem[] = [
-  { label: 'Сегодня', to: '/', icon: '☀️' },
-  { label: 'Питание', to: '/nutrition', icon: '🍽️' },
-  { label: 'Тренировки', to: '/workouts', icon: '🏋️' },
-  { label: 'Календарь', to: '/calendar', icon: '📅' },
-  { label: 'Прогресс', to: '/progress', icon: '📈' },
-  { label: 'Привычки', to: '/habits', icon: '✅' },
-  { label: 'Аналитика', to: '/analytics', icon: '📊' },
-  { label: 'Настройки', to: '/settings', icon: '⚙️' },
+  { label: 'Сегодня', to: '/', icon: sunnyOutline },
+  { label: 'Питание', to: '/nutrition', icon: restaurantOutline },
+  { label: 'Тренировки', to: '/workouts', icon: barbellOutline },
+  { label: 'Календарь', to: '/calendar', icon: calendarOutline },
+  { label: 'Прогресс', to: '/progress', icon: trendingUpOutline },
+  { label: 'Привычки', to: '/habits', icon: checkmarkCircleOutline },
+  { label: 'Аналитика', to: '/analytics', icon: statsChartOutline },
+  { label: 'Настройки', to: '/settings', icon: settingsOutline },
 ]
 
-/** Mobile bottom nav (Таблица 6) — the central slot is the "+" quick-add action, not a route. */
+/** Mobile bottom tab bar (Таблица 6) — the central slot is the "+" quick-add action, not a route. */
 export const mobileNavItems: NavItem[] = [
-  { label: 'Сегодня', to: '/', icon: '☀️' },
-  { label: 'Дневник', to: '/nutrition', icon: '🍽️' },
-  { label: 'Прогресс', to: '/progress', icon: '📈' },
-  { label: 'Ещё', to: '/more', icon: '⋯' },
+  { label: 'Сегодня', to: '/', icon: sunnyOutline },
+  { label: 'Дневник', to: '/nutrition', icon: restaurantOutline },
+  { label: 'Прогресс', to: '/progress', icon: trendingUpOutline },
+  { label: 'Ещё', to: '/more', icon: ellipsisHorizontalOutline },
 ]

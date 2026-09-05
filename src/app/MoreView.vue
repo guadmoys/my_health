@@ -1,24 +1,46 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
+import {
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  IonList,
+  IonPage,
+  IonTitle,
+  IonToolbar,
+} from '@ionic/vue'
+import {
+  barbellOutline,
+  calendarOutline,
+  checkmarkCircleOutline,
+  settingsOutline,
+  statsChartOutline,
+} from 'ionicons/icons'
 
 const links = [
-  { label: 'Тренировки', to: '/workouts' },
-  { label: 'Календарь', to: '/calendar' },
-  { label: 'Привычки', to: '/habits' },
-  { label: 'Аналитика', to: '/analytics' },
-  { label: 'Настройки', to: '/settings' },
+  { label: 'Тренировки', to: '/workouts', icon: barbellOutline },
+  { label: 'Календарь', to: '/calendar', icon: calendarOutline },
+  { label: 'Привычки', to: '/habits', icon: checkmarkCircleOutline },
+  { label: 'Аналитика', to: '/analytics', icon: statsChartOutline },
+  { label: 'Настройки', to: '/settings', icon: settingsOutline },
 ]
 </script>
 
 <template>
-  <n-flex vertical style="padding: 16px" :size="8">
-    <n-h2 style="margin: 0 0 8px">Ещё</n-h2>
-    <n-list hoverable clickable>
-      <n-list-item v-for="link in links" :key="link.to" @click="router.push(link.to)">
-        {{ link.label }}
-      </n-list-item>
-    </n-list>
-  </n-flex>
+  <IonPage>
+    <IonHeader>
+      <IonToolbar>
+        <IonTitle>Ещё</IonTitle>
+      </IonToolbar>
+    </IonHeader>
+    <IonContent>
+      <IonList>
+        <IonItem v-for="link in links" :key="link.to" :router-link="link.to" button lines="full">
+          <IonIcon :icon="link.icon" slot="start" aria-hidden="true" />
+          <IonLabel>{{ link.label }}</IonLabel>
+        </IonItem>
+      </IonList>
+    </IonContent>
+  </IonPage>
 </template>

@@ -1,28 +1,48 @@
 <script setup lang="ts">
-import { computed, h } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
-import type { MenuOption } from 'naive-ui'
+import {
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  IonList,
+  IonMenu,
+  IonRouterOutlet,
+  IonSplitPane,
+  IonTitle,
+  IonToolbar,
+} from '@ionic/vue'
+import { useRoute } from 'vue-router'
 
 import { desktopNavItems } from './nav-items'
 
 const route = useRoute()
-
-const menuOptions = computed<MenuOption[]>(() =>
-  desktopNavItems.map((item) => ({
-    label: () => h(RouterLink, { to: item.to }, { default: () => item.label }),
-    key: item.to,
-    icon: () => h('span', { 'aria-hidden': 'true' }, item.icon),
-  })),
-)
-
-const activeKey = computed(() => route.path)
 </script>
 
 <template>
-  <n-layout-sider bordered width="220" :native-scrollbar="false" show-trigger="bar">
-    <div style="padding: 16px 16px 0" aria-hidden="true">
-      <n-h3 style="margin: 0">VITA</n-h3>
-    </div>
-    <n-menu :value="activeKey" :options="menuOptions" />
-  </n-layout-sider>
+  <IonSplitPane content-id="main-content" when="md">
+    <IonMenu content-id="main-content" type="reveal">
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>VITA</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent>
+        <IonList>
+          <IonItem
+            v-for="item in desktopNavItems"
+            :key="item.to"
+            :router-link="item.to"
+            :color="route.path === item.to ? 'light' : undefined"
+            lines="none"
+            button
+          >
+            <IonIcon :icon="item.icon" slot="start" aria-hidden="true" />
+            <IonLabel>{{ item.label }}</IonLabel>
+          </IonItem>
+        </IonList>
+      </IonContent>
+    </IonMenu>
+    <IonRouterOutlet id="main-content" />
+  </IonSplitPane>
 </template>
