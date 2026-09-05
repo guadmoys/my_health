@@ -237,6 +237,8 @@ export interface WeightLog {
   date: DateString
   value: number
   note?: string
+  /** Tie-breaks same-day entries (e.g. a corrected re-weigh) so "latest" is unambiguous. */
+  createdAt: DateTimeString
 }
 
 export type BodyMeasurementType = 'waist' | 'chest' | 'hips' | 'arm' | 'thigh' | 'neck' | 'custom'

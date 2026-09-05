@@ -2,15 +2,19 @@ import { dailyStatsSourceTables, recalculateDailyStats } from '../aggregates'
 import { db } from '../db'
 import type { BodyMeasurement, WeightLog } from '../types'
 
+function byDateThenCreatedAt(a: WeightLog, b: WeightLog): number {
+  return a.date.localeCompare(b.date) || a.createdAt.localeCompare(b.createdAt)
+}
+
 class WeightRepository {
   async getRange(from: string, to: string): Promise<WeightLog[]> {
     const list = await db.weights.where('date').between(from, to, true, true).toArray()
-    return list.sort((a, b) => a.date.localeCompare(b.date))
+    return list.sort(byDateThenCreatedAt)
   }
 
   async getAll(): Promise<WeightLog[]> {
     const list = await db.weights.toArray()
-    return list.sort((a, b) => a.date.localeCompare(b.date))
+    return list.sort(byDateThenCreatedAt)
   }
 
   async add(log: WeightLog): Promise<void> {

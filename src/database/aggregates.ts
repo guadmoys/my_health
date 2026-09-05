@@ -90,7 +90,7 @@ export async function recalculateDailyStats(db: VitaDatabase, date: DateString):
     steps: steps || undefined,
     activityMinutes: activityMinutes || undefined,
     sleepMinutes: sleepMinutes || undefined,
-    weight: weights.at(-1)?.value,
+    weight: [...weights].sort((a, b) => a.createdAt.localeCompare(b.createdAt)).at(-1)?.value,
     habitsCompleted,
     habitsPlanned,
   }
