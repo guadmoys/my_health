@@ -16,6 +16,7 @@ import {
   checkmarkCircleOutline,
   settingsOutline,
   statsChartOutline,
+  trophyOutline,
 } from 'ionicons/icons'
 
 const links = [
@@ -23,6 +24,7 @@ const links = [
   { label: 'Календарь', to: '/calendar', icon: calendarOutline },
   { label: 'Привычки', to: '/habits', icon: checkmarkCircleOutline },
   { label: 'Аналитика', to: '/analytics', icon: statsChartOutline },
+  { label: 'Достижения', to: '/achievements', icon: trophyOutline },
   { label: 'Настройки', to: '/settings', icon: settingsOutline },
 ]
 </script>

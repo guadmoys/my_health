@@ -106,6 +106,10 @@ class WorkoutSessionRepository {
     await db.workoutSessions.update(sessionId, { status: 'abandoned', finishedAt: nowIso() })
   }
 
+  async countCompleted(): Promise<number> {
+    return db.workoutSessions.where('status').equals('completed').count()
+  }
+
   async getHistoryForWorkout(workoutId: string): Promise<WorkoutSession[]> {
     const list = await db.workoutSessions.where('workoutId').equals(workoutId).toArray()
     return list.filter((s) => s.status === 'completed').sort((a, b) => b.date.localeCompare(a.date))
@@ -133,6 +137,35 @@ class WorkoutSessionRepository {
     if (!exerciseSession) return undefined
 
     return { session: lastSession, setLogs: await this.getSetLogs(exerciseSession.id) }
+  }
+
+  /**
+   * The best-ever value of `metric` (e.g. weight lifted, duration held) for
+   * this exercise across all previously *completed* sessions, excluding the
+   * one just finished — used to detect a new personal record (§14, §23).
+   */
+  async getHistoricalBest(
+    exerciseId: string,
+    excludeSessionId: string,
+    metric: (log: SetLog) => number | undefined,
+  ): Promise<number | undefined> {
+    const exerciseSessions = await db.exerciseSessions.where('exerciseId').equals(exerciseId).toArray()
+    const sessionIds = [...new Set(exerciseSessions.map((es) => es.sessionId))].filter(
+      (id) => id !== excludeSessionId,
+    )
+    if (!sessionIds.length) return undefined
+
+    const completedIds = new Set(
+      (await db.workoutSessions.bulkGet(sessionIds))
+        .filter((s): s is WorkoutSession => !!s && s.status === 'completed')
+        .map((s) => s.id),
+    )
+    const relevant = exerciseSessions.filter((es) => completedIds.has(es.sessionId))
+    if (!relevant.length) return undefined
+
+    const allSetLogs = (await Promise.all(relevant.map((es) => this.getSetLogs(es.id)))).flat()
+    const values = allSetLogs.map(metric).filter((v): v is number => v !== undefined && v > 0)
+    return values.length ? Math.max(...values) : undefined
   }
 }
 

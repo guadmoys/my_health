@@ -8,6 +8,7 @@ import {
   statsChartOutline,
   sunnyOutline,
   trendingUpOutline,
+  trophyOutline,
 } from 'ionicons/icons'
 
 export interface NavItem {
@@ -25,6 +26,7 @@ export const desktopNavItems: NavItem[] = [
   { label: 'Прогресс', to: '/progress', icon: trendingUpOutline },
   { label: 'Привычки', to: '/habits', icon: checkmarkCircleOutline },
   { label: 'Аналитика', to: '/analytics', icon: statsChartOutline },
+  { label: 'Достижения', to: '/achievements', icon: trophyOutline },
   { label: 'Настройки', to: '/settings', icon: settingsOutline },
 ]
 

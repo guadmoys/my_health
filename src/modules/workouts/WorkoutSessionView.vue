@@ -20,6 +20,7 @@ import { useLiveQuery } from '@/composables/useLiveQuery'
 import { useToast } from '@/composables/useToast'
 import { exerciseRepository, workoutRepository, workoutSessionRepository } from '@/database/repositories'
 import type { Exercise, SetLog, WorkoutExercise } from '@/database/types'
+import { checkWorkoutAchievements, describeAchievement } from '@/modules/motivation/achievements'
 import { nowIso } from '@/utils/date'
 import { createId } from '@/utils/id'
 
@@ -174,9 +175,13 @@ async function finish() {
         handler: () => {
           void (async () => {
             const finished = await workoutSessionRepository.finish(props.sessionId)
+            const unlocked = await checkWorkoutAchievements(props.sessionId)
             await toast.success(
               `Тренировка завершена: ${Math.round(finished.totalVolume ?? 0)} кг за ${Math.round((finished.totalDurationSeconds ?? 0) / 60)} мин`,
             )
+            for (const key of unlocked) {
+              await toast.success(await describeAchievement(key))
+            }
             router.replace('/workouts')
           })()
         },

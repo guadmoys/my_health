@@ -126,4 +126,39 @@ describe('workoutSessionRepository', () => {
     expect(last?.setLogs).toHaveLength(1)
     expect(last?.setLogs[0].weight).toBe(40)
   })
+
+  it('getHistoricalBest finds the max across prior completed sessions, ignoring the current one', async () => {
+    const { workout, exercises } = await seedWorkout()
+    const exerciseId = exercises[0].exerciseId
+    const byWeight = (l: { weight?: number }) => l.weight
+
+    const session1 = await workoutSessionRepository.start(workout, exercises, today())
+    const [es1] = await workoutSessionRepository.getExerciseSessions(session1.id)
+    await workoutSessionRepository.logSet({
+      id: createId(),
+      exerciseSessionId: es1.id,
+      setIndex: 0,
+      reps: 8,
+      weight: 60,
+      completedAt: new Date().toISOString(),
+    })
+    await workoutSessionRepository.finish(session1.id)
+
+    const session2 = await workoutSessionRepository.start(workout, exercises, today())
+    const [es2] = await workoutSessionRepository.getExerciseSessions(session2.id)
+
+    // Before logging anything in session2, its historical best is session1's 60.
+    expect(await workoutSessionRepository.getHistoricalBest(exerciseId, session2.id, byWeight)).toBe(60)
+
+    // A heavier set in the still-active session2 shouldn't count as "historical" for itself.
+    await workoutSessionRepository.logSet({
+      id: createId(),
+      exerciseSessionId: es2.id,
+      setIndex: 0,
+      reps: 5,
+      weight: 70,
+      completedAt: new Date().toISOString(),
+    })
+    expect(await workoutSessionRepository.getHistoricalBest(exerciseId, session2.id, byWeight)).toBe(60)
+  })
 })

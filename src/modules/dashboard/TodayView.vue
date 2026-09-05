@@ -8,6 +8,7 @@ import {
   IonCheckbox,
   IonContent,
   IonHeader,
+  IonIcon,
   IonInput,
   IonItem,
   IonPage,
@@ -15,6 +16,7 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/vue'
+import { closeOutline } from 'ionicons/icons'
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -32,6 +34,8 @@ import {
   wellbeingRepository,
   workoutSessionRepository,
 } from '@/database/repositories'
+import { checkOngoingAchievements, describeAchievement } from '@/modules/motivation/achievements'
+import { dismissRule, evaluateRules, type Rule } from '@/modules/motivation/rules'
 import { nowIso, today } from '@/utils/date'
 import { createId } from '@/utils/id'
 
@@ -117,17 +121,18 @@ async function toggleDiscomfort() {
   })
 }
 
-// --- Next planned action ---
-const nextAction = computed(() => {
-  if (activeSession.value) return 'Незавершённая тренировка — можно продолжить.'
-  const planned = dailyStats.value?.habitsPlanned ?? 0
-  const completed = dailyStats.value?.habitsCompleted ?? 0
-  if (planned > completed) return `Осталось привычек на сегодня: ${planned - completed}`
-  return 'На сегодня активных задач нет.'
-})
+// --- Local rule engine (§24): transparent, dismissible, never auto-changes data ---
+const rules = useLiveQuery(() => evaluateRules(), [] as Rule[])
+async function dismiss(rule: Rule) {
+  await dismissRule(rule)
+}
 
-// Safety rule (§3, §16, Таблица 24): never suggest more load when discomfort is marked.
-const showRestSuggestion = computed(() => wellbeing.value?.discomfort === true)
+// --- Achievements (§23): checked once per Today mount, not reactively ---
+void checkOngoingAchievements().then(async (unlocked) => {
+  for (const key of unlocked) {
+    await toast.success(await describeAchievement(key))
+  }
+})
 </script>
 
 <template>
@@ -152,13 +157,12 @@ const showRestSuggestion = computed(() => wellbeing.value?.discomfort === true)
           </IonCardContent>
         </IonCard>
 
-        <IonCard>
-          <IonCardContent>{{ nextAction }}</IonCardContent>
-        </IonCard>
-
-        <IonCard v-if="showRestSuggestion" color="warning">
-          <IonCardContent>
-            Отмечен дискомфорт — не увеличивайте нагрузку сегодня, при необходимости снизьте её или отдохните.
+        <IonCard v-for="rule in rules" :key="rule.id" :color="rule.priority >= 100 ? 'warning' : undefined">
+          <IonCardContent class="rule-card">
+            <span>{{ rule.text }}</span>
+            <IonButton fill="clear" size="small" @click="dismiss(rule)">
+              <IonIcon :icon="closeOutline" slot="icon-only" aria-label="Скрыть подсказку" />
+            </IonButton>
           </IonCardContent>
         </IonCard>
 
@@ -318,6 +322,13 @@ const showRestSuggestion = computed(() => wellbeing.value?.discomfort === true)
   gap: 16px;
   max-width: 720px;
   margin: 0 auto;
+}
+
+.rule-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .stat-row {
