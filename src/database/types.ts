@@ -337,6 +337,7 @@ export interface DailyStats {
   waterMl?: number
   workoutMinutes?: number
   workoutCount?: number
+  workoutVolume?: number
   steps?: number
   activityMinutes?: number
   sleepMinutes?: number

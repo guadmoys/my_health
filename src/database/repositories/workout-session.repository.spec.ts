@@ -90,6 +90,7 @@ describe('workoutSessionRepository', () => {
 
     const stats = await db.dailyStats.get(today())
     expect(stats?.workoutCount).toBe(1)
+    expect(stats?.workoutVolume).toBe(500)
   })
 
   it('getLastPerformance returns the most recent completed set logs for an exercise', async () => {

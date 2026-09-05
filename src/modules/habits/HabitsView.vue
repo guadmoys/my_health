@@ -23,6 +23,7 @@ import { habitRepository } from '@/database/repositories'
 import type { Habit, HabitLog } from '@/database/types'
 import { DATE_FORMAT, nowIso, today } from '@/utils/date'
 import { createId } from '@/utils/id'
+import { currentWeekRange } from '@/utils/period'
 
 import HabitFormModal from './components/HabitFormModal.vue'
 
@@ -53,12 +54,6 @@ async function toggle(habit: Habit) {
   logsByHabit.value[habit.id] = await habitRepository.getLogsForRange(habit.id, rangeStart, today())
 }
 
-function mondayStartOfWeek(): string {
-  const dow = dayjs().day() // 0 = Sunday
-  const diffFromMonday = dow === 0 ? 6 : dow - 1
-  return dayjs().subtract(diffFromMonday, 'day').format(DATE_FORMAT)
-}
-
 /** Framed positively, never as a penalty for missed days (§21). */
 function progressText(habit: Habit): string {
   const logs = logsByHabit.value[habit.id] ?? []
@@ -67,7 +62,7 @@ function progressText(habit: Habit): string {
     const count = logs.filter((l) => l.completed && l.date >= last7Start).length
     return `${count} активных дней из 7`
   }
-  const weekStart = mondayStartOfWeek()
+  const { from: weekStart } = currentWeekRange()
   const count = logs.filter((l) => l.completed && l.date >= weekStart).length
   return `${count} из ${habit.targetPerPeriod} на этой неделе`
 }

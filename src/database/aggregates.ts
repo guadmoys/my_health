@@ -62,6 +62,7 @@ export async function recalculateDailyStats(db: VitaDatabase, date: DateString):
     (sum, s) => sum + Math.round((s.totalDurationSeconds ?? 0) / 60),
     0,
   )
+  const workoutVolume = completedSessions.reduce((sum, s) => sum + (s.totalVolume ?? 0), 0)
 
   const steps = activityLogs
     .filter((a) => a.type === 'steps')
@@ -87,6 +88,7 @@ export async function recalculateDailyStats(db: VitaDatabase, date: DateString):
     waterMl: waterLogs.reduce((sum, w) => sum + w.amountMl, 0),
     workoutMinutes,
     workoutCount: completedSessions.length,
+    workoutVolume: workoutVolume || undefined,
     steps: steps || undefined,
     activityMinutes: activityMinutes || undefined,
     sleepMinutes: sleepMinutes || undefined,
