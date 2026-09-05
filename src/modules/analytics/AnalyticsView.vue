@@ -4,7 +4,7 @@ import dayjs from 'dayjs'
 import { computed, ref } from 'vue'
 
 import { useLiveQuery } from '@/composables/useLiveQuery'
-import { dailyStatsRepository, profileRepository, wellbeingRepository } from '@/database/repositories'
+import { dailyStatsRepository, profileRepository, settingsRepository, wellbeingRepository } from '@/database/repositories'
 import type { DailyStats, WellbeingLog } from '@/database/types'
 import { currentWeekRange, periodOptions, periodRange, type Period } from '@/utils/period'
 import { average, formatMinutes, sum } from '@/utils/stats'
@@ -81,6 +81,9 @@ const activeDaysCount = computed(
   () => stats.value.filter((s) => (s.steps ?? 0) > 0 || (s.activityMinutes ?? 0) > 0).length,
 )
 const avgSteps = computed(() => average(stats.value.filter((s) => (s.steps ?? 0) > 0), (s) => s.steps))
+
+const stepsGoal = useLiveQuery(() => settingsRepository.getValue<number | null>('stepsGoal', null), null)
+const daysGoalMet = computed(() => stats.value.filter((s) => (s.steps ?? 0) >= (stepsGoal.value ?? Infinity)).length)
 
 const avgWater = computed(() => (totalDays.value ? sum(stats.value, (s) => s.waterMl) / totalDays.value : undefined))
 const daysWithWater = computed(() => stats.value.filter((s) => (s.waterMl ?? 0) > 0).length)
@@ -175,6 +178,7 @@ function fmt(n: number | undefined, digits = 0): string {
         <IonCardContent>
           <p>Дни активности: {{ activeDaysCount }} из {{ totalDays }}</p>
           <p v-if="avgSteps">В среднем: {{ Math.round(avgSteps) }} шагов</p>
+          <p v-if="stepsGoal">Цель по шагам достигнута: {{ daysGoalMet }} из {{ totalDays }} дней</p>
         </IonCardContent>
       </IonCard>
 

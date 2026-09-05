@@ -12,12 +12,13 @@ import {
   IonInput,
   IonItem,
   IonPage,
+  IonProgressBar,
   IonText,
   IonTitle,
   IonToolbar,
 } from '@ionic/vue'
 import { closeOutline } from 'ionicons/icons'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { presentQuickAdd } from '@/components/layout/quick-add'
@@ -29,6 +30,7 @@ import {
   goalRepository,
   mealRepository,
   profileRepository,
+  settingsRepository,
   sleepRepository,
   waterRepository,
   wellbeingRepository,
@@ -84,12 +86,30 @@ async function logSleep() {
 }
 
 // --- Activity (manual steps, §19) ---
+const stepsGoal = useLiveQuery(() => settingsRepository.getValue<number | null>('stepsGoal', null), null)
+const stepsProgress = computed(() => {
+  if (!stepsGoal.value || !dailyStats.value?.steps) return 0
+  return Math.min(1, dailyStats.value.steps / stepsGoal.value)
+})
+
+// Steps are a running daily total, so the input starts prefilled with
+// today's already-logged count (once) rather than an empty box to refill.
 const stepsInput = ref<string | number | null>(null)
+let stepsPrefilled = false
+watch(
+  dailyStats,
+  (stats) => {
+    if (stepsPrefilled || stats?.steps === undefined) return
+    stepsInput.value = stats.steps
+    stepsPrefilled = true
+  },
+  { immediate: true },
+)
+
 async function logSteps() {
   const steps = Number(stepsInput.value)
   if (!steps) return
-  await activityRepository.add({ id: createId(), date, type: 'steps', value: steps })
-  stepsInput.value = null
+  await activityRepository.upsertStepsForDate(date, steps)
   await toast.success('Шаги записаны')
 }
 
@@ -238,8 +258,11 @@ void checkOngoingAchievements().then(async (unlocked) => {
             <IonCardTitle>Активность</IonCardTitle>
           </IonCardHeader>
           <IonCardContent>
-            <p v-if="dailyStats?.steps">Шаги сегодня: {{ dailyStats.steps }}</p>
+            <p v-if="dailyStats?.steps">
+              Шаги сегодня: {{ dailyStats.steps }}<template v-if="stepsGoal"> из {{ stepsGoal }}</template>
+            </p>
             <p v-else>Шаги ещё не записаны.</p>
+            <IonProgressBar v-if="stepsGoal" :value="stepsProgress" style="margin: 8px 0" />
             <IonItem lines="none" class="inline-input">
               <IonInput v-model="stepsInput" type="number" placeholder="Шаги" :min="0" />
               <IonButton slot="end" size="small" :disabled="!stepsInput" @click="logSteps">Записать</IonButton>

@@ -1,12 +1,13 @@
+import dayjs from 'dayjs'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { db } from '@/database/db'
-import { workoutSessionRepository } from '@/database/repositories'
+import { activityRepository, settingsRepository, workoutSessionRepository } from '@/database/repositories'
 import type { Exercise, Workout, WorkoutExercise } from '@/database/types'
-import { today } from '@/utils/date'
+import { DATE_FORMAT, today } from '@/utils/date'
 import { createId } from '@/utils/id'
 
-import { checkWorkoutAchievements } from './achievements'
+import { checkOngoingAchievements, checkWorkoutAchievements } from './achievements'
 
 describe('checkWorkoutAchievements', () => {
   beforeEach(async () => {
@@ -104,5 +105,33 @@ describe('checkWorkoutAchievements', () => {
     const unlocked = await checkWorkoutAchievements(heavierSessionId)
 
     expect(unlocked.some((k) => k.startsWith('pr:'))).toBe(true)
+  })
+})
+
+describe('checkOngoingAchievements — steps', () => {
+  beforeEach(async () => {
+    await db.open()
+    await Promise.all([db.activityLogs.clear(), db.dailyStats.clear(), db.achievements.clear(), db.settings.clear()])
+  })
+
+  it('unlocks "first_steps" once any steps have been logged', async () => {
+    expect(await checkOngoingAchievements()).not.toContain('first_steps')
+
+    await activityRepository.upsertStepsForDate(today(), 4000)
+    expect(await checkOngoingAchievements()).toContain('first_steps')
+    // Idempotent: doesn't re-unlock on a later check.
+    expect(await checkOngoingAchievements()).not.toContain('first_steps')
+  })
+
+  it('unlocks "steps_goal_streak_7" only once the goal has been met for 7 straight days', async () => {
+    await settingsRepository.setValue('stepsGoal', 8000)
+    for (let i = 0; i < 6; i++) {
+      await activityRepository.upsertStepsForDate(dayjs().subtract(i, 'day').format(DATE_FORMAT), 9000)
+    }
+    // Only 6 of the last 7 days meet the goal so far.
+    expect(await checkOngoingAchievements()).not.toContain('steps_goal_streak_7')
+
+    await activityRepository.upsertStepsForDate(dayjs().subtract(6, 'day').format(DATE_FORMAT), 9000)
+    expect(await checkOngoingAchievements()).toContain('steps_goal_streak_7')
   })
 })

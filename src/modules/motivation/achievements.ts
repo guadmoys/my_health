@@ -2,9 +2,11 @@ import dayjs from 'dayjs'
 
 import {
   achievementRepository,
+  activityRepository,
   dailyStatsRepository,
   exerciseRepository,
   profileRepository,
+  settingsRepository,
   workoutSessionRepository,
 } from '@/database/repositories'
 import type { SetLog } from '@/database/types'
@@ -90,6 +92,19 @@ export async function checkOngoingAchievements(): Promise<string[]> {
     if (await achievementRepository.unlock('streak_7')) unlocked.push('streak_7')
   }
 
+  if (await activityRepository.hasAnySteps()) {
+    if (await achievementRepository.unlock('first_steps')) unlocked.push('first_steps')
+  }
+
+  const stepsGoal = await settingsRepository.getValue<number | null>('stepsGoal', null)
+  if (stepsGoal) {
+    const statsByDate = new Map(stats.map((s) => [s.date, s]))
+    const goalMetEveryDay = last7Dates.every((d) => (statsByDate.get(d)?.steps ?? 0) >= stepsGoal)
+    if (goalMetEveryDay) {
+      if (await achievementRepository.unlock('steps_goal_streak_7')) unlocked.push('steps_goal_streak_7')
+    }
+  }
+
   return unlocked
 }
 
@@ -98,6 +113,8 @@ export async function describeAchievement(key: string): Promise<string> {
   if (key === 'first_workout') return '🏋️ Первая тренировка'
   if (key === 'first_month') return '🗓️ Первый месяц с VITA'
   if (key === 'streak_7') return '🔥 7 дней подряд с записями'
+  if (key === 'first_steps') return '👟 Первые шаги записаны'
+  if (key === 'steps_goal_streak_7') return '👟 Цель по шагам — 7 дней подряд'
   const milestoneMatch = key.match(/^workouts_(\d+)$/)
   if (milestoneMatch) return `🏋️ ${milestoneMatch[1]} тренировок`
   const prMatch = key.match(/^pr:(.+):(\d{4}-\d{2}-\d{2})$/)

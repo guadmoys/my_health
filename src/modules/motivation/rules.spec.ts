@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { db } from '@/database/db'
+import { settingsRepository } from '@/database/repositories'
 import { today } from '@/utils/date'
 import { createId } from '@/utils/id'
 
@@ -15,6 +16,8 @@ describe('evaluateRules', () => {
       db.habits.clear(),
       db.habitLogs.clear(),
       db.settings.clear(),
+      db.activityLogs.clear(),
+      db.dailyStats.clear(),
     ])
   })
 
@@ -48,6 +51,18 @@ describe('evaluateRules', () => {
     await dismissRule({ id: 'daily-habits-remaining', period: 'day' })
     rules = await evaluateRules()
     expect(rules.find((r) => r.id === 'daily-habits-remaining')).toBeUndefined()
+  })
+
+  it('reminds how many steps remain toward the goal, and clears once the goal is met', async () => {
+    await settingsRepository.setValue('stepsGoal', 8000)
+    await db.dailyStats.put({ date: today(), steps: 5000 })
+
+    let rules = await evaluateRules()
+    expect(rules.find((r) => r.id === 'steps-remaining')?.text).toContain('3000')
+
+    await db.dailyStats.put({ date: today(), steps: 8000 })
+    rules = await evaluateRules()
+    expect(rules.find((r) => r.id === 'steps-remaining')).toBeUndefined()
   })
 
   it('never modifies data on its own — evaluating rules performs no writes to habits/wellbeing', async () => {

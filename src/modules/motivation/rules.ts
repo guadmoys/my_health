@@ -1,4 +1,10 @@
-import { habitRepository, settingsRepository, wellbeingRepository, workoutSessionRepository } from '@/database/repositories'
+import {
+  dailyStatsRepository,
+  habitRepository,
+  settingsRepository,
+  wellbeingRepository,
+  workoutSessionRepository,
+} from '@/database/repositories'
 import { today } from '@/utils/date'
 
 /**
@@ -72,6 +78,20 @@ export async function evaluateRules(): Promise<Rule[]> {
         priority: 10,
         period: 'day',
         text: `Осталось привычек на сегодня: ${remaining}`,
+      })
+    }
+  }
+
+  const stepsGoal = await settingsRepository.getValue<number | null>('stepsGoal', null)
+  if (stepsGoal) {
+    const stats = await dailyStatsRepository.getByDate(date)
+    const steps = stats?.steps ?? 0
+    if (steps < stepsGoal) {
+      rules.push({
+        id: 'steps-remaining',
+        priority: 5,
+        period: 'day',
+        text: `До цели по шагам осталось: ${stepsGoal - steps}`,
       })
     }
   }
