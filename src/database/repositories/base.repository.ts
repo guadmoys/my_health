@@ -25,6 +25,12 @@ export class BaseRepository<T extends object> {
     return this.table.toArray()
   }
 
+  async getMany(ids: string[]): Promise<T[]> {
+    if (!ids.length) return []
+    const results = await this.table.bulkGet(ids as never[])
+    return results.filter((r): r is T => !!r)
+  }
+
   async add(entity: T): Promise<T> {
     await this.table.add(entity)
     return entity

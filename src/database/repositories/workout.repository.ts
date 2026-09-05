@@ -26,6 +26,10 @@ class WorkoutRepository {
     })
   }
 
+  async updateMeta(id: string, changes: Partial<Pick<Workout, 'name' | 'category' | 'description' | 'estimatedMinutes'>>): Promise<void> {
+    await db.workouts.update(id, { ...changes, updatedAt: nowIso() })
+  }
+
   async updateExercises(workoutId: string, exercises: WorkoutExercise[]): Promise<void> {
     await db.transaction('rw', db.workouts, db.workoutExercises, async () => {
       await db.workoutExercises.where('workoutId').equals(workoutId).delete()

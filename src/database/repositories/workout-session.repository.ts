@@ -106,6 +106,30 @@ class WorkoutSessionRepository {
     const list = await db.workoutSessions.where('workoutId').equals(workoutId).toArray()
     return list.filter((s) => s.status === 'completed').sort((a, b) => b.date.localeCompare(a.date))
   }
+
+  /** The most recent completed performance of this exercise, across any workout (§13 step 2, §14). */
+  async getLastPerformance(
+    exerciseId: string,
+    excludeSessionId?: string,
+  ): Promise<{ session: WorkoutSession; setLogs: SetLog[] } | undefined> {
+    const exerciseSessions = await db.exerciseSessions.where('exerciseId').equals(exerciseId).toArray()
+    const sessionIds = [...new Set(exerciseSessions.map((es) => es.sessionId))].filter(
+      (id) => id !== excludeSessionId,
+    )
+    if (!sessionIds.length) return undefined
+
+    const sessions = (await db.workoutSessions.bulkGet(sessionIds)).filter(
+      (s): s is WorkoutSession => !!s && s.status === 'completed',
+    )
+    if (!sessions.length) return undefined
+
+    sessions.sort((a, b) => (b.finishedAt ?? b.startedAt).localeCompare(a.finishedAt ?? a.startedAt))
+    const lastSession = sessions[0]
+    const exerciseSession = exerciseSessions.find((es) => es.sessionId === lastSession.id)
+    if (!exerciseSession) return undefined
+
+    return { session: lastSession, setLogs: await this.getSetLogs(exerciseSession.id) }
+  }
 }
 
 export const workoutSessionRepository = new WorkoutSessionRepository()

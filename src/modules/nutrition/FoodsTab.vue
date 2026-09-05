@@ -38,7 +38,7 @@ async function toggleFavorite(food: Food) {
 async function openCreateForm() {
   const modal = await modalController.create({ component: FoodFormModal })
   await modal.present()
-  const { data, role } = await modal.onWillDismiss<FoodFormInput>()
+  const { data, role } = await modal.onDidDismiss<FoodFormInput>()
   if (role !== 'confirm' || !data) return
 
   await foodRepository.add({
@@ -54,7 +54,7 @@ async function openCreateForm() {
 async function openEditForm(food: Food) {
   const modal = await modalController.create({ component: FoodFormModal, componentProps: { food } })
   await modal.present()
-  const { data, role } = await modal.onWillDismiss<FoodFormInput>()
+  const { data, role } = await modal.onDidDismiss<FoodFormInput>()
   if (role !== 'confirm' || !data) return
 
   await foodRepository.update(food.id, { ...data, updatedAt: nowIso() })

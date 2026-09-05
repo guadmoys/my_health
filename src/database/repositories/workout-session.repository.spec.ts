@@ -91,4 +91,38 @@ describe('workoutSessionRepository', () => {
     const stats = await db.dailyStats.get(today())
     expect(stats?.workoutCount).toBe(1)
   })
+
+  it('getLastPerformance returns the most recent completed set logs for an exercise', async () => {
+    const { workout, exercises } = await seedWorkout()
+    const exerciseId = exercises[0].exerciseId
+
+    const session1 = await workoutSessionRepository.start(workout, exercises, today())
+    const [es1] = await workoutSessionRepository.getExerciseSessions(session1.id)
+    await workoutSessionRepository.logSet({
+      id: createId(),
+      exerciseSessionId: es1.id,
+      setIndex: 0,
+      reps: 8,
+      weight: 40,
+      completedAt: new Date().toISOString(),
+    })
+    await workoutSessionRepository.finish(session1.id)
+
+    const session2 = await workoutSessionRepository.start(workout, exercises, today())
+    const [es2] = await workoutSessionRepository.getExerciseSessions(session2.id)
+    await workoutSessionRepository.logSet({
+      id: createId(),
+      exerciseSessionId: es2.id,
+      setIndex: 0,
+      reps: 10,
+      weight: 45,
+      completedAt: new Date().toISOString(),
+    })
+
+    // Active session2 shouldn't count as "last performance" for itself.
+    const last = await workoutSessionRepository.getLastPerformance(exerciseId, session2.id)
+    expect(last?.session.id).toBe(session1.id)
+    expect(last?.setLogs).toHaveLength(1)
+    expect(last?.setLogs[0].weight).toBe(40)
+  })
 })

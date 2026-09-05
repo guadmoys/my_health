@@ -18,6 +18,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/modules/workouts/WorkoutsView.vue'),
   },
   {
+    path: '/workouts/session/:sessionId',
+    name: 'workout-session',
+    component: () => import('@/modules/workouts/WorkoutSessionView.vue'),
+    props: true,
+  },
+  {
+    path: '/workouts/:id',
+    name: 'workout-detail',
+    component: () => import('@/modules/workouts/WorkoutDetailView.vue'),
+    props: true,
+  },
+  {
     path: '/calendar',
     name: 'calendar',
     component: () => import('@/modules/calendar/CalendarView.vue'),

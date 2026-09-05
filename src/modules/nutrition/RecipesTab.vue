@@ -29,7 +29,7 @@ interface RecipeFormResult {
 async function openCreateForm() {
   const modal = await modalController.create({ component: RecipeFormModal })
   await modal.present()
-  const { data, role } = await modal.onWillDismiss<RecipeFormResult>()
+  const { data, role } = await modal.onDidDismiss<RecipeFormResult>()
   if (role !== 'confirm' || !data) return
 
   const recipe: Recipe = { id: createId(), name: data.name, totalWeight: data.totalWeight, createdAt: nowIso() }

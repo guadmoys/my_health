@@ -46,7 +46,7 @@ async function openAdd(type: MealType) {
     componentProps: { date: date.value, mealType: type },
   })
   await modal.present()
-  const { role } = await modal.onWillDismiss()
+  const { role } = await modal.onDidDismiss()
   if (role === 'confirm') await toast.success('Добавлено в дневник')
 }
 
