@@ -17,6 +17,11 @@ class WeightRepository {
     return list.sort(byDateThenCreatedAt)
   }
 
+  async getByDate(date: string): Promise<WeightLog | undefined> {
+    const list = await this.getRange(date, date)
+    return list.at(-1)
+  }
+
   async add(log: WeightLog): Promise<void> {
     await db.transaction('rw', dailyStatsSourceTables(db), async () => {
       await db.weights.add(log)

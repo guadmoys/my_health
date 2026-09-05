@@ -19,6 +19,10 @@ class WorkoutSessionRepository {
     return db.workoutSessions.get(id)
   }
 
+  async getByDate(date: string): Promise<WorkoutSession[]> {
+    return db.workoutSessions.where('date').equals(date).toArray()
+  }
+
   async getExerciseSessions(sessionId: string): Promise<ExerciseSession[]> {
     const list = await db.exerciseSessions.where('sessionId').equals(sessionId).toArray()
     return list.sort((a, b) => a.position - b.position)
