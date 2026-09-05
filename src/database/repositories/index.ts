@@ -5,7 +5,12 @@ export { exerciseRepository } from './exercise.repository'
 export { foodRepository, recipeRepository } from './food.repository'
 export { goalRepository } from './goal.repository'
 export { habitRepository } from './habit.repository'
-export { computeNutritionSnapshot, mealRepository } from './nutrition.repository'
+export {
+  computeNutritionSnapshot,
+  computeRecipeNutritionPer100g,
+  mealRepository,
+  scalePer100g,
+} from './nutrition.repository'
 export { noteRepository } from './note.repository'
 export { profileRepository } from './profile.repository'
 export { programRepository } from './program.repository'
