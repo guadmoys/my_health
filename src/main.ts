@@ -16,6 +16,11 @@ import '@ionic/vue/css/text-alignment.css'
 import '@ionic/vue/css/text-transformation.css'
 import '@ionic/vue/css/flex-utils.css'
 import '@ionic/vue/css/display.css'
+import './theme/variables.css'
+// Automatic dark theme that follows the OS/browser color-scheme preference —
+// imported after variables.css so its @media (prefers-color-scheme: dark)
+// overrides win over the unconditional light-mode values above.
+import '@ionic/vue/css/palettes/dark.system.css'
 import './style.css'
 
 async function bootstrap() {

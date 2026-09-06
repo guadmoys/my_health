@@ -13,6 +13,7 @@ import {
   IonPage,
   IonSelect,
   IonSelectOption,
+  IonSpinner,
   IonTitle,
   IonToolbar,
   alertController,
@@ -20,6 +21,7 @@ import {
 import { reactive, ref, watch } from 'vue'
 
 import { useLiveQuery } from '@/composables/useLiveQuery'
+import { usePwaUpdate } from '@/composables/usePwaUpdate'
 import { useToast } from '@/composables/useToast'
 import { createBackup, restoreBackup } from '@/database/backup'
 import { profileRepository } from '@/database/repositories'
@@ -29,6 +31,19 @@ import { today } from '@/utils/date'
 import { profileFormSchema } from './schemas'
 
 const toast = useToast()
+const { checking, checkForUpdate, applyUpdate } = usePwaUpdate()
+
+async function checkAppUpdate() {
+  const result = await checkForUpdate()
+  if (result === 'update-available') {
+    await toast.success('Найдено обновление — устанавливаем и перезапускаем…')
+    applyUpdate()
+  } else if (result === 'up-to-date') {
+    await toast.success('У вас установлена последняя версия')
+  } else {
+    await toast.error('Проверка обновлений недоступна в этом режиме')
+  }
+}
 
 const profile = useLiveQuery(() => profileRepository.getCurrent(), undefined as Profile | undefined)
 
@@ -195,6 +210,19 @@ async function onFileSelected(event: Event) {
           <IonButton expand="block" @click="exportBackup">Экспортировать данные</IonButton>
           <IonButton expand="block" fill="outline" @click="pickImportFile">Импортировать данные</IonButton>
           <input ref="fileInput" type="file" accept="application/json" hidden @change="onFileSelected" />
+        </IonCardContent>
+      </IonCard>
+
+      <IonCard>
+        <IonCardHeader>
+          <IonCardTitle>Обновления</IonCardTitle>
+        </IonCardHeader>
+        <IonCardContent>
+          <p>Приложение работает офлайн и кеширует свои файлы. Проверьте, не вышла ли новая версия скриптов и страниц.</p>
+          <IonButton expand="block" :disabled="checking" @click="checkAppUpdate">
+            <IonSpinner v-if="checking" name="crescent" slot="start" />
+            {{ checking ? 'Проверяем…' : 'Проверить обновления' }}
+          </IonButton>
         </IonCardContent>
       </IonCard>
     </IonContent>

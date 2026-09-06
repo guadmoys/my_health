@@ -46,3 +46,11 @@ const route = useRoute()
     <IonRouterOutlet id="main-content" />
   </IonSplitPane>
 </template>
+
+<style scoped>
+ion-item {
+  margin: 2px 8px;
+  border-radius: var(--app-control-radius, 12px);
+  overflow: hidden;
+}
+</style>

@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { IonButton } from '@ionic/vue'
-import { useRegisterSW } from 'virtual:pwa-register/vue'
+
+import { usePwaUpdate } from '@/composables/usePwaUpdate'
 
 // PWA/offline: lets a waiting service worker take over on demand, instead of
 // silently swapping the app under the user mid-session (§ PWA/offline).
-const { needRefresh, updateServiceWorker } = useRegisterSW()
+const { needRefresh, applyUpdate } = usePwaUpdate()
 </script>
 
 <template>
   <div v-if="needRefresh" class="pwa-update-banner">
     <span>Доступно обновление приложения.</span>
-    <IonButton size="small" @click="updateServiceWorker()">Обновить</IonButton>
+    <IonButton size="small" @click="applyUpdate()">Обновить</IonButton>
   </div>
 </template>
 

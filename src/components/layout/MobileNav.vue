@@ -48,12 +48,17 @@ const [left, right] = [mobileNavItems.slice(0, 2), mobileNavItems.slice(2)]
 
 <style scoped>
 ion-tab-bar {
-  --background: var(--ion-background-color, #fff);
-  --border: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.12));
-  --color: var(--ion-color-step-600, #737373);
-  --color-selected: var(--ion-text-color, #000);
-  height: 50px;
+  --background: rgba(var(--ion-background-color-rgb, 255, 255, 255), 0.82);
+  --border: none;
+  --color: var(--ion-color-medium, #92949c);
+  --color-selected: var(--ion-color-primary, #0a84ff);
+  height: 58px;
   padding-bottom: env(safe-area-inset-bottom);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  box-shadow:
+    0 -1px 0 rgba(0, 0, 0, 0.06),
+    0 -16px 28px -18px rgba(0, 0, 0, 0.4);
 }
 
 ion-tab-button {
@@ -62,39 +67,46 @@ ion-tab-button {
 }
 
 ion-tab-button ion-icon {
-  font-size: 26px;
+  font-size: 25px;
 }
 
+/* The "+" FAB overlaps the bar rather than sitting inside it, the way the
+   center action reads on iOS Telegram/Instagram — a bright, glowing circle
+   punched through the bar instead of just another flat tab icon. */
 .quick-add-btn {
   position: fixed;
   left: 50%;
-  bottom: calc(10px + env(safe-area-inset-bottom));
+  bottom: calc(30px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1.5px solid var(--ion-text-color, #000);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ion-text-color, #000);
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--ion-color-primary, #0a84ff), var(--ion-color-primary-shade, #0973e0));
+  color: var(--ion-color-primary-contrast, #fff);
   padding: 0;
   cursor: pointer;
   z-index: 100;
+  box-shadow:
+    0 0 0 5px var(--ion-background-color, #fff),
+    0 8px 20px -4px rgba(var(--ion-color-primary-rgb, 10, 132, 255), 0.55),
+    0 0 20px rgba(var(--ion-color-primary-rgb, 10, 132, 255), 0.45);
 }
 
 .quick-add-btn ion-icon {
-  font-size: 20px;
+  font-size: 28px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .quick-add-btn {
-    transition: transform 0.1s ease;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
 
   .quick-add-btn:active {
-    transform: translateX(-50%) scale(0.92);
+    transform: translateX(-50%) scale(0.9);
   }
 }
 </style>
