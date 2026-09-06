@@ -9,14 +9,14 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      registerType: 'autoUpdate',
-      injectRegister: 'auto',
+      // 'prompt' + a manual useRegisterSW() hook (PwaUpdatePrompt.vue) so a
+      // new version never swaps itself in under the user mid-session — they
+      // choose when to reload. Never let a new app version wipe IndexedDB.
+      registerType: 'prompt',
+      injectRegister: null,
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        // Never let a new app version wipe the local IndexedDB database.
         cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
       },
       manifest: {
         name: 'VITA',
