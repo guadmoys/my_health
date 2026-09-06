@@ -5,7 +5,12 @@ import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
+// GitHub Pages serves this repo at /my_health/, so all asset/router paths
+// need that base — set VITE_BASE to override when building for another host.
+const base = process.env.VITE_BASE ?? '/my_health/'
+
 export default defineConfig({
+  base,
   plugins: [
     vue(),
     VitePWA({
@@ -26,7 +31,8 @@ export default defineConfig({
         theme_color: '#101418',
         background_color: '#101418',
         display: 'standalone',
-        start_url: '/',
+        start_url: base,
+        scope: base,
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },
