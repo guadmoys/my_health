@@ -36,3 +36,10 @@ npm run typecheck    # проверка типов
   привязки, календарь цикла с прогнозами и советами, настройки профиля,
   полный backup/restore, PWA/офлайн (service worker, обновление по запросу
   пользователя).
+
+## CI и версионирование
+
+При каждом пуше/PR в `main` GitHub Actions собирает проект (typecheck, тесты,
+`vite build`) — см. `.github/workflows/build.yml`. При мердже в `main` версия
+в `package.json` повышается автоматически по Conventional Commits —
+подробности и правила MAJOR/MINOR/PATCH в [VERSIONING.md](./VERSIONING.md).
