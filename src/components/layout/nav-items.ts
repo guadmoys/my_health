@@ -2,11 +2,15 @@ import {
   barbellOutline,
   calendarOutline,
   checkmarkCircleOutline,
+  ellipsisHorizontal,
   ellipsisHorizontalOutline,
+  restaurant,
   restaurantOutline,
   settingsOutline,
   statsChartOutline,
+  sunny,
   sunnyOutline,
+  trendingUp,
   trendingUpOutline,
   trophyOutline,
   waterOutline,
@@ -16,6 +20,8 @@ export interface NavItem {
   label: string
   to: string
   icon: string
+  /** Filled variant shown when the tab is active (Instagram-style icon swap). */
+  activeIcon?: string
 }
 
 /** Desktop left nav (Таблица 6). */
@@ -34,8 +40,8 @@ export const desktopNavItems: NavItem[] = [
 
 /** Mobile bottom tab bar (Таблица 6) — the central slot is the "+" quick-add action, not a route. */
 export const mobileNavItems: NavItem[] = [
-  { label: 'Сегодня', to: '/', icon: sunnyOutline },
-  { label: 'Дневник', to: '/nutrition', icon: restaurantOutline },
-  { label: 'Прогресс', to: '/progress', icon: trendingUpOutline },
-  { label: 'Ещё', to: '/more', icon: ellipsisHorizontalOutline },
+  { label: 'Сегодня', to: '/', icon: sunnyOutline, activeIcon: sunny },
+  { label: 'Дневник', to: '/nutrition', icon: restaurantOutline, activeIcon: restaurant },
+  { label: 'Прогресс', to: '/progress', icon: trendingUpOutline, activeIcon: trendingUp },
+  { label: 'Ещё', to: '/more', icon: ellipsisHorizontalOutline, activeIcon: ellipsisHorizontal },
 ]
