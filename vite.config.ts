@@ -21,7 +21,8 @@ export default defineConfig({
       manifest: {
         name: 'VITA',
         short_name: 'VITA',
-        description: 'Локальная система тренировок, питания, привычек и здоровья',
+        description:
+          'VITA — офлайн-приложение для тренировок, питания, привычек, целей и контроля здоровья. Без сервера, без аккаунта и без ИИ: все данные хранятся только на устройстве',
         theme_color: '#101418',
         background_color: '#101418',
         display: 'standalone',
