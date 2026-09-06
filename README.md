@@ -44,3 +44,8 @@ npm run typecheck    # проверка типов
 `vite build`) — см. `.github/workflows/build.yml`. При мердже в `main` версия
 в `package.json` повышается автоматически по Conventional Commits —
 подробности и правила MAJOR/MINOR/PATCH в [VERSIONING.md](./VERSIONING.md).
+
+## Лицензия
+
+MIT — см. [LICENSE](./LICENSE). Использование и изменение кода разрешены при
+условии сохранения указания авторства.
