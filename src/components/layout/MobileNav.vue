@@ -47,18 +47,23 @@ const [left, right] = [mobileNavItems.slice(0, 2), mobileNavItems.slice(2)]
 </template>
 
 <style scoped>
+/* A floating pill, detached from the screen edge on all sides, instead of a
+   bar flush with the bottom — the raw edge-to-edge bar was the "torn off"
+   look; a rounded floating bar reads as one deliberate piece. */
 ion-tab-bar {
   --background: rgba(var(--ion-background-color-rgb, 255, 255, 255), 0.82);
   --border: none;
   --color: var(--ion-color-medium, #92949c);
   --color-selected: var(--ion-color-primary, #0a84ff);
-  height: 58px;
-  padding-bottom: env(safe-area-inset-bottom);
+  height: 62px;
+  margin: 0 14px calc(14px + env(safe-area-inset-bottom));
+  border-radius: var(--app-tab-bar-radius, 26px);
+  overflow: hidden;
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   box-shadow:
-    0 -1px 0 rgba(0, 0, 0, 0.06),
-    0 -16px 28px -18px rgba(0, 0, 0, 0.4);
+    0 1px 1px rgba(0, 0, 0, 0.05),
+    0 12px 28px -10px rgba(0, 0, 0, 0.35);
 }
 
 ion-tab-button {
@@ -76,7 +81,7 @@ ion-tab-button ion-icon {
 .quick-add-btn {
   position: fixed;
   left: 50%;
-  bottom: calc(30px + env(safe-area-inset-bottom));
+  bottom: calc(48px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
   display: flex;
   align-items: center;

@@ -18,6 +18,10 @@ body,
 body {
   margin: 0;
   overflow-x: hidden;
+  /* Themed instead of left to the browser's UA default, so the overscroll/
+     bounce area and any sliver behind fixed elements match the app's
+     light/dark Ionic palette instead of flashing plain white or black. */
+  background: var(--ion-background-color, #fff);
 }
 
 button {

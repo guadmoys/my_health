@@ -78,7 +78,14 @@
   --ion-color-light-shade: #d7d8da;
   --ion-color-light-tint: #f5f6f9;
 
+  /** base surface **/
+  --ion-background-color: #ffffff;
+  --ion-background-color-rgb: 255, 255, 255;
+  --ion-text-color: #000000;
+  --ion-text-color-rgb: 0, 0, 0;
+
   /** shared design tokens used by the app's own components (tab bar, FAB) **/
   --app-card-radius: 18px;
   --app-control-radius: 12px;
+  --app-tab-bar-radius: 26px;
 }
