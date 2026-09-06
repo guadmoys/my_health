@@ -1,5 +1,7 @@
 # VITA
 
+🔗 **Сайт:** https://guadmoys.github.io/my_health/
+
 VITA — личный трекер здоровья и формы: тренировки, питание, привычки, цели,
 сон, шаги и календарь цикла в одном приложении. Это local-first PWA —
 работает офлайн, без сервера, без регистрации, без ИИ и без фото: все данные
@@ -44,6 +46,10 @@ npm run typecheck    # проверка типов
 `vite build`) — см. `.github/workflows/build.yml`. При мердже в `main` версия
 в `package.json` повышается автоматически по Conventional Commits —
 подробности и правила MAJOR/MINOR/PATCH в [VERSIONING.md](./VERSIONING.md).
+
+При каждом пуше в `main` `.github/workflows/deploy-pages.yml` собирает
+проект и публикует `dist/` на GitHub Pages (нужно один раз включить
+Settings → Pages → Source: GitHub Actions в репозитории).
 
 ## Лицензия
 
