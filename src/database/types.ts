@@ -362,6 +362,23 @@ export interface CycleLog {
   note?: string
 }
 
+// --- Medicines (домашняя аптечка) ---
+
+/** Whether the medicine helped the symptom it was taken for. */
+export type MedicineEffect = 'helped' | 'not_helped' | 'unknown'
+
+export interface Medicine {
+  id: string
+  /** Symptom/category it's used for, e.g. "Заложенность носа". */
+  category: string
+  name: string
+  link?: string
+  comment?: string
+  effect: MedicineEffect
+  createdAt: DateTimeString
+  updatedAt: DateTimeString
+}
+
 // --- Settings (§33, Таблица 32) ---
 
 export interface Setting {

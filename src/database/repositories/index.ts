@@ -6,6 +6,7 @@ export { exerciseRepository } from './exercise.repository'
 export { foodRepository, recipeRepository } from './food.repository'
 export { goalRepository } from './goal.repository'
 export { habitRepository } from './habit.repository'
+export { medicineRepository } from './medicine.repository'
 export {
   computeNutritionSnapshot,
   computeRecipeNutritionPer100g,

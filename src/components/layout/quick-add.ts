@@ -34,6 +34,7 @@ export async function presentQuickAdd(router: Router): Promise<void> {
       { text: 'Самочувствие', handler: () => router.push('/') },
       { text: 'Привычка', handler: () => router.push('/habits') },
       { text: 'Заметка', handler: () => router.push('/calendar') },
+      { text: 'Лекарство', handler: () => router.push('/medicines') },
       { text: 'Отмена', role: 'cancel' },
     ],
   })
