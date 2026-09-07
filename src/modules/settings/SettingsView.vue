@@ -4,7 +4,6 @@ import {
   IonCard,
   IonCardContent,
   IonCardHeader,
-  IonCardTitle,
   IonContent,
   IonHeader,
   IonInput,
@@ -17,7 +16,10 @@ import {
   IonToolbar,
   alertController,
 } from '@ionic/vue'
+import { cloudUploadOutline, personCircleOutline } from 'ionicons/icons'
 import { reactive, ref, watch } from 'vue'
+
+import { CardTitle } from '@/components/ui'
 
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { useToast } from '@/composables/useToast'
@@ -144,7 +146,7 @@ async function onFileSelected(event: Event) {
     <IonContent class="ion-padding">
       <IonCard>
         <IonCardHeader>
-          <IonCardTitle>Профиль</IonCardTitle>
+          <CardTitle :icon="personCircleOutline">Профиль</CardTitle>
         </IonCardHeader>
         <IonCardContent>
           <p v-for="err in errors" :key="err" class="error">{{ err }}</p>
@@ -188,7 +190,7 @@ async function onFileSelected(event: Event) {
 
       <IonCard>
         <IonCardHeader>
-          <IonCardTitle>Резервная копия</IonCardTitle>
+          <CardTitle :icon="cloudUploadOutline">Резервная копия</CardTitle>
         </IonCardHeader>
         <IonCardContent>
           <p>Все данные хранятся только на этом устройстве. Сохраните резервную копию, чтобы не потерять их.</p>

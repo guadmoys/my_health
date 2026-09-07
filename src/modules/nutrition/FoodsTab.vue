@@ -1,25 +1,14 @@
 <script setup lang="ts">
-import {
-  IonButton,
-  IonIcon,
-  IonItem,
-  IonItemOption,
-  IonItemOptions,
-  IonItemSliding,
-  IonLabel,
-  IonList,
-  IonNote,
-  IonSearchbar,
-  alertController,
-  modalController,
-} from '@ionic/vue'
-import { pencilOutline, starOutline, star as starFilled, trashOutline } from 'ionicons/icons'
+import { IonIcon, IonSearchbar, alertController, modalController } from '@ionic/vue'
+import { fastFoodOutline, pencilOutline, star as starFilled, starOutline, trashOutline } from 'ionicons/icons'
 import { ref } from 'vue'
 
+import { Badge, EmptyState, EntityCard, FabButton } from '@/components/ui'
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { useToast } from '@/composables/useToast'
 import { foodRepository } from '@/database/repositories'
 import type { Food } from '@/database/types'
+import { stringHue } from '@/utils/color'
 import { nowIso } from '@/utils/date'
 import { createId } from '@/utils/id'
 
@@ -81,37 +70,72 @@ async function confirmDelete(food: Food) {
 </script>
 
 <template>
-  <div class="ion-padding-horizontal ion-padding-top">
-    <IonSearchbar v-model="searchQuery" placeholder="Поиск продукта" />
-  </div>
+  <div class="wrap">
+    <IonSearchbar v-model="searchQuery" placeholder="Поиск продукта" class="wrap__search" />
 
-  <IonList>
-    <IonItemSliding v-for="food in foods" :key="food.id">
-      <IonItem>
-        <IonLabel>
-          <h2>{{ food.name }}</h2>
-          <p>{{ food.category }} · {{ food.kcalPer100 ?? '—' }} ккал/100{{ food.defaultUnit === 'ml' ? 'мл' : 'г' }}</p>
-        </IonLabel>
-        <IonButton fill="clear" slot="end" @click="toggleFavorite(food)">
-          <IonIcon :icon="food.favorite ? starFilled : starOutline" slot="icon-only" aria-label="Избранное" />
-        </IonButton>
-      </IonItem>
-      <IonItemOptions side="end">
-        <IonItemOption color="primary" @click="openEditForm(food)">
-          <IonIcon :icon="pencilOutline" slot="icon-only" />
-        </IonItemOption>
-        <IonItemOption color="danger" @click="confirmDelete(food)">
-          <IonIcon :icon="trashOutline" slot="icon-only" />
-        </IonItemOption>
-      </IonItemOptions>
-    </IonItemSliding>
+    <div v-if="foods.length" class="grid">
+      <EntityCard
+        v-for="food in foods"
+        :key="food.id"
+        :avatar-text="food.category.charAt(0).toUpperCase()"
+        :avatar-hue="stringHue(food.category)"
+        :clickable="false"
+      >
+        <template #title>{{ food.name }}</template>
+        <template #subtitle>{{ food.category }}</template>
+        <template #trailing>
+          <button type="button" class="icon-btn" :aria-label="food.favorite ? 'Убрать из избранного' : 'В избранное'" @click="toggleFavorite(food)">
+            <IonIcon :icon="food.favorite ? starFilled : starOutline" :class="{ 'icon-btn--active': food.favorite }" aria-hidden="true" />
+          </button>
+          <button type="button" class="icon-btn" aria-label="Изменить" @click="openEditForm(food)">
+            <IonIcon :icon="pencilOutline" aria-hidden="true" />
+          </button>
+          <button type="button" class="icon-btn" aria-label="Удалить" @click="confirmDelete(food)">
+            <IonIcon :icon="trashOutline" aria-hidden="true" />
+          </button>
+        </template>
+        <template v-if="food.kcalPer100 !== undefined" #footer>
+          <Badge tone="accent">{{ food.kcalPer100 }} ккал / 100{{ food.defaultUnit === 'ml' ? 'мл' : 'г' }}</Badge>
+        </template>
+      </EntityCard>
+    </div>
 
-    <IonItem v-if="!foods.length">
-      <IonNote>Ничего не найдено. Добавьте новый продукт кнопкой ниже.</IonNote>
-    </IonItem>
-  </IonList>
+    <EmptyState v-else :icon="fastFoodOutline" title="Ничего не найдено" note="Добавьте новый продукт кнопкой ниже." />
 
-  <div class="ion-padding">
-    <IonButton expand="block" @click="openCreateForm">+ Новый продукт</IonButton>
+    <FabButton @click="openCreateForm">Продукт</FabButton>
   </div>
 </template>
+
+<style scoped>
+.wrap {
+  padding: 12px 16px 96px;
+}
+
+.wrap__search {
+  padding: 0 0 8px;
+}
+
+.grid {
+  display: grid;
+  gap: 10px;
+}
+
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+}
+
+.icon-btn ion-icon {
+  font-size: 1.1rem;
+  opacity: 0.5;
+}
+
+.icon-btn ion-icon.icon-btn--active {
+  color: var(--ion-color-warning);
+  opacity: 1;
+}
+</style>

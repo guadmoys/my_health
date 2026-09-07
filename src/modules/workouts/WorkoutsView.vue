@@ -1,26 +1,14 @@
 <script setup lang="ts">
-import {
-  IonButton,
-  IonContent,
-  IonHeader,
-  IonItem,
-  IonItemOption,
-  IonItemOptions,
-  IonItemSliding,
-  IonLabel,
-  IonList,
-  IonPage,
-  IonTitle,
-  IonToolbar,
-  alertController,
-  modalController,
-} from '@ionic/vue'
+import { IonButton, IonContent, IonHeader, IonIcon, IonPage, IonTitle, IonToolbar, actionSheetController, alertController, modalController } from '@ionic/vue'
+import { barbellOutline, ellipsisHorizontal } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
 
+import { Badge, EmptyState, EntityCard, FabButton } from '@/components/ui'
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { useToast } from '@/composables/useToast'
 import { workoutRepository, workoutSessionRepository } from '@/database/repositories'
 import type { Workout } from '@/database/types'
+import { stringHue } from '@/utils/color'
 import { nowIso } from '@/utils/date'
 import { createId } from '@/utils/id'
 
@@ -70,6 +58,18 @@ async function confirmArchive(workout: Workout) {
   })
   await alert.present()
 }
+
+async function openActions(workout: Workout) {
+  const sheet = await actionSheetController.create({
+    header: workout.name,
+    buttons: [
+      { text: 'Дублировать', handler: () => duplicate(workout) },
+      { text: 'В архив', role: 'destructive', handler: () => confirmArchive(workout) },
+      { text: 'Отмена', role: 'cancel' },
+    ],
+  })
+  await sheet.present()
+}
 </script>
 
 <template>
@@ -80,40 +80,80 @@ async function confirmArchive(workout: Workout) {
       </IonToolbar>
     </IonHeader>
     <IonContent>
-      <div v-if="activeSession" class="ion-padding resume-banner">
-        <IonButton expand="block" color="warning" :router-link="`/workouts/session/${activeSession.id}`">
-          Продолжить тренировку
-        </IonButton>
+      <div class="wrap">
+        <div v-if="activeSession" class="resume-banner">
+          <IonButton expand="block" color="warning" :router-link="`/workouts/session/${activeSession.id}`">
+            Продолжить тренировку
+          </IonButton>
+        </div>
+
+        <div v-if="workouts.length" class="grid">
+          <EntityCard
+            v-for="workout in workouts"
+            :key="workout.id"
+            :avatar-icon="barbellOutline"
+            :avatar-hue="stringHue(workout.category)"
+            :clickable="false"
+          >
+            <template #title>
+              <router-link :to="`/workouts/${workout.id}`" class="stretched-link">{{ workout.name }}</router-link>
+            </template>
+            <template #subtitle>{{ workout.category }}</template>
+            <template #trailing>
+              <button type="button" class="icon-btn" aria-label="Действия" @click="openActions(workout)">
+                <IonIcon :icon="ellipsisHorizontal" aria-hidden="true" />
+              </button>
+            </template>
+            <template v-if="workout.estimatedMinutes" #footer>
+              <Badge tone="accent">{{ workout.estimatedMinutes }} мин</Badge>
+            </template>
+          </EntityCard>
+        </div>
+
+        <EmptyState v-else :icon="barbellOutline" title="Тренировок пока нет" note="Создайте первую кнопкой ниже." />
       </div>
 
-      <IonList>
-        <IonItemSliding v-for="workout in workouts" :key="workout.id">
-          <IonItem :router-link="`/workouts/${workout.id}`" button>
-            <IonLabel>
-              <h2>{{ workout.name }}</h2>
-              <p>{{ workout.category }}<template v-if="workout.estimatedMinutes"> · {{ workout.estimatedMinutes }} мин</template></p>
-            </IonLabel>
-          </IonItem>
-          <IonItemOptions side="end">
-            <IonItemOption color="primary" @click="duplicate(workout)">Копия</IonItemOption>
-            <IonItemOption color="medium" @click="confirmArchive(workout)">Архив</IonItemOption>
-          </IonItemOptions>
-        </IonItemSliding>
-
-        <IonItem v-if="!workouts.length">
-          <IonLabel color="medium">Тренировок пока нет. Создайте первую кнопкой ниже.</IonLabel>
-        </IonItem>
-      </IonList>
-
-      <div class="ion-padding">
-        <IonButton expand="block" @click="openCreateForm">+ Создать тренировку</IonButton>
-      </div>
+      <FabButton @click="openCreateForm">Тренировка</FabButton>
     </IonContent>
   </IonPage>
 </template>
 
 <style scoped>
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 16px 96px;
+}
+
 .resume-banner {
-  padding-bottom: 0;
+  margin-bottom: 12px;
+}
+
+.grid {
+  display: grid;
+  gap: 10px;
+}
+
+.stretched-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.stretched-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.icon-btn {
+  position: relative;
+  z-index: 1;
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.5;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
 }
 </style>

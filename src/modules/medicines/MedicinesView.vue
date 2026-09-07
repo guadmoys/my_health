@@ -1,37 +1,14 @@
 <script setup lang="ts">
-import {
-  IonButton,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonItem,
-  IonItemOption,
-  IonItemOptions,
-  IonItemSliding,
-  IonLabel,
-  IonList,
-  IonNote,
-  IonPage,
-  IonSearchbar,
-  IonTitle,
-  IonToolbar,
-  alertController,
-  modalController,
-} from '@ionic/vue'
-import {
-  helpCircleOutline,
-  openOutline,
-  pencilOutline,
-  thumbsDown,
-  thumbsUp,
-  trashOutline,
-} from 'ionicons/icons'
-import { ref } from 'vue'
+import { IonContent, IonHeader, IonIcon, IonPage, IonSearchbar, IonTitle, IonToolbar, actionSheetController, alertController, modalController } from '@ionic/vue'
+import { helpCircleOutline, linkOutline, medkitOutline, thumbsDown, thumbsUp } from 'ionicons/icons'
+import { computed, ref } from 'vue'
 
+import { Badge, EmptyState, EntityCard, FabButton, StatBar } from '@/components/ui'
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { useToast } from '@/composables/useToast'
 import { medicineRepository } from '@/database/repositories'
 import type { Medicine } from '@/database/types'
+import { stringHue } from '@/utils/color'
 import { nowIso } from '@/utils/date'
 import { createId } from '@/utils/id'
 
@@ -43,9 +20,17 @@ const searchQuery = ref('')
 
 const medicines = useLiveQuery(() => medicineRepository.search(searchQuery.value), [] as Medicine[], [searchQuery])
 
-const effectIcon = { helped: thumbsUp, not_helped: thumbsDown, unknown: helpCircleOutline }
-const effectColor = { helped: 'success', not_helped: 'danger', unknown: 'medium' }
-const effectLabel = { helped: 'Помогло', not_helped: 'Не помогло', unknown: 'Не знаю' }
+const stats = computed(() => [
+  { value: medicines.value.length, label: 'всего' },
+  { value: medicines.value.filter((m) => m.effect === 'helped').length, label: 'помогло', tone: 'good' as const },
+  { value: medicines.value.filter((m) => m.effect === 'not_helped').length, label: 'не помогло', tone: 'bad' as const },
+])
+
+const effectMeta = {
+  helped: { icon: thumbsUp, label: 'Помогло', tone: 'good' },
+  not_helped: { icon: thumbsDown, label: 'Не помогло', tone: 'bad' },
+  unknown: { icon: helpCircleOutline, label: 'Не знаю', tone: 'neutral' },
+} as const
 
 async function openCreateForm() {
   const modal = await modalController.create({ component: MedicineFormModal })
@@ -89,6 +74,21 @@ async function confirmDelete(medicine: Medicine) {
   })
   await alert.present()
 }
+
+async function openActions(medicine: Medicine) {
+  const sheet = await actionSheetController.create({
+    header: medicine.name,
+    buttons: [
+      ...(medicine.link
+        ? [{ text: 'Открыть товар', handler: () => void window.open(medicine.link, '_blank', 'noopener') }]
+        : []),
+      { text: 'Изменить', handler: () => openEditForm(medicine) },
+      { text: 'Удалить', role: 'destructive', handler: () => confirmDelete(medicine) },
+      { text: 'Отмена', role: 'cancel' },
+    ],
+  })
+  await sheet.present()
+}
 </script>
 
 <template>
@@ -99,41 +99,68 @@ async function confirmDelete(medicine: Medicine) {
       </IonToolbar>
     </IonHeader>
     <IonContent>
-      <div class="ion-padding-horizontal ion-padding-top">
-        <IonSearchbar v-model="searchQuery" placeholder="Поиск по названию или симптому" />
+      <div class="wrap">
+        <StatBar :stats="stats" class="wrap__stats" />
+
+        <IonSearchbar v-model="searchQuery" placeholder="Поиск по названию или симптому" class="wrap__search" />
+
+        <div v-if="medicines.length" class="grid">
+          <EntityCard
+            v-for="medicine in medicines"
+            :key="medicine.id"
+            :avatar-text="medicine.category.charAt(0).toUpperCase()"
+            :avatar-hue="stringHue(medicine.category)"
+            :accent="effectMeta[medicine.effect].tone"
+            @click="openActions(medicine)"
+          >
+            <template #title>{{ medicine.name }}</template>
+            <template #subtitle>{{ medicine.category }}</template>
+            <template #trailing>
+              <IonIcon v-if="medicine.link" :icon="linkOutline" class="link-hint" aria-hidden="true" />
+            </template>
+            <template v-if="medicine.comment" #description>{{ medicine.comment }}</template>
+            <template #footer>
+              <Badge :tone="effectMeta[medicine.effect].tone" :icon="effectMeta[medicine.effect].icon">
+                {{ effectMeta[medicine.effect].label }}
+              </Badge>
+            </template>
+          </EntityCard>
+        </div>
+
+        <EmptyState
+          v-else
+          :icon="medkitOutline"
+          title="Пока пусто"
+          note="Добавьте первое лекарство — что помогло, а что нет, всегда будет под рукой."
+        />
       </div>
 
-      <IonList>
-        <IonItemSliding v-for="medicine in medicines" :key="medicine.id">
-          <IonItem>
-            <IonIcon :icon="effectIcon[medicine.effect]" :color="effectColor[medicine.effect]" slot="start" :aria-label="effectLabel[medicine.effect]" />
-            <IonLabel>
-              <h2>{{ medicine.name }}</h2>
-              <p>{{ medicine.category }}</p>
-              <p v-if="medicine.comment">{{ medicine.comment }}</p>
-            </IonLabel>
-            <IonButton v-if="medicine.link" fill="clear" slot="end" :href="medicine.link" target="_blank" rel="noopener">
-              <IonIcon :icon="openOutline" slot="icon-only" aria-label="Открыть товар" />
-            </IonButton>
-          </IonItem>
-          <IonItemOptions side="end">
-            <IonItemOption color="primary" @click="openEditForm(medicine)">
-              <IonIcon :icon="pencilOutline" slot="icon-only" />
-            </IonItemOption>
-            <IonItemOption color="danger" @click="confirmDelete(medicine)">
-              <IonIcon :icon="trashOutline" slot="icon-only" />
-            </IonItemOption>
-          </IonItemOptions>
-        </IonItemSliding>
-
-        <IonItem v-if="!medicines.length">
-          <IonNote>Ничего не найдено. Добавьте лекарство кнопкой ниже.</IonNote>
-        </IonItem>
-      </IonList>
-
-      <div class="ion-padding">
-        <IonButton expand="block" @click="openCreateForm">+ Добавить лекарство</IonButton>
-      </div>
+      <FabButton @click="openCreateForm">Добавить</FabButton>
     </IonContent>
   </IonPage>
 </template>
+
+<style scoped>
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 16px 96px;
+}
+
+.wrap__stats {
+  margin-bottom: 12px;
+}
+
+.wrap__search {
+  padding: 0 0 8px;
+}
+
+.grid {
+  display: grid;
+  gap: 10px;
+}
+
+.link-hint {
+  opacity: 0.5;
+}
+</style>

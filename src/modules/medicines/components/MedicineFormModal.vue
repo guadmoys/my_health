@@ -7,15 +7,15 @@ import {
   IonInput,
   IonItem,
   IonList,
-  IonSegment,
-  IonSegmentButton,
   IonTextarea,
   IonTitle,
   IonToolbar,
   modalController,
 } from '@ionic/vue'
+import { helpCircleOutline, thumbsDown, thumbsUp } from 'ionicons/icons'
 import { reactive, ref } from 'vue'
 
+import { SectionLabel, TilePicker, type TileOption } from '@/components/ui'
 import type { Medicine, MedicineEffect } from '@/database/types'
 
 import { medicineFormSchema } from '../schemas'
@@ -31,6 +31,12 @@ const form = reactive({
 })
 
 const errors = ref<string[]>([])
+
+const effectOptions: TileOption<MedicineEffect>[] = [
+  { value: 'helped', icon: thumbsUp, label: 'Помогло', tone: 'good' },
+  { value: 'not_helped', icon: thumbsDown, label: 'Не помогло', tone: 'bad' },
+  { value: 'unknown', icon: helpCircleOutline, label: 'Не знаю', tone: 'neutral' },
+]
 
 function submit() {
   const result = medicineFormSchema.safeParse({
@@ -68,7 +74,8 @@ function cancel() {
   </IonHeader>
   <IonContent class="ion-padding">
     <p v-for="err in errors" :key="err" class="error">{{ err }}</p>
-    <IonList>
+
+    <IonList inset>
       <IonItem>
         <IonInput
           v-model="form.category"
@@ -89,7 +96,7 @@ function cancel() {
           placeholder="https://..."
         />
       </IonItem>
-      <IonItem>
+      <IonItem lines="none">
         <IonTextarea
           v-model="form.comment"
           label="Комментарий (необязательно)"
@@ -98,14 +105,10 @@ function cancel() {
           auto-grow
         />
       </IonItem>
-      <IonItem>
-        <IonSegment v-model="form.effect">
-          <IonSegmentButton value="helped">Помогло</IonSegmentButton>
-          <IonSegmentButton value="not_helped">Не помогло</IonSegmentButton>
-          <IonSegmentButton value="unknown">Не знаю</IonSegmentButton>
-        </IonSegment>
-      </IonItem>
     </IonList>
+
+    <SectionLabel>Помогло?</SectionLabel>
+    <TilePicker v-model="form.effect" :options="effectOptions" />
   </IonContent>
 </template>
 

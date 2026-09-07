@@ -4,21 +4,19 @@ import {
   IonCard,
   IonCardContent,
   IonCardHeader,
-  IonCardTitle,
   IonContent,
   IonHeader,
   IonInput,
   IonItem,
-  IonLabel,
   IonList,
   IonPage,
-  IonSelect,
-  IonSelectOption,
   IonTitle,
   IonToolbar,
 } from '@ionic/vue'
+import { calendarOutline, pulseOutline, trendingUpOutline, waterOutline } from 'ionicons/icons'
 import { computed, reactive, ref, watch } from 'vue'
 
+import { Badge, CardTitle, EmptyState, EntityCard, SectionLabel, StatBar, TilePicker, type Stat, type TileOption } from '@/components/ui'
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { useToast } from '@/composables/useToast'
 import { cycleRepository, weightRepository } from '@/database/repositories'
@@ -57,6 +55,42 @@ watch(
 )
 
 const ratingScale = [1, 2, 3, 4, 5] as const
+const ratingOptions: TileOption<number>[] = ratingScale.map((v) => ({ value: v, label: String(v), tone: 'accent' }))
+
+const painModel = computed<number>({
+  get: () => form.pain ?? 0,
+  set: (v) => {
+    form.pain = v as 1 | 2 | 3 | 4 | 5
+  },
+})
+const moodModel = computed<number>({
+  get: () => form.mood ?? 0,
+  set: (v) => {
+    form.mood = v as 1 | 2 | 3 | 4 | 5
+  },
+})
+
+const flowOptions: TileOption<CycleFlow | ''>[] = [
+  { value: '', label: 'Нет', tone: 'neutral' },
+  { value: 'spotting', label: 'Мажущие', tone: 'accent' },
+  { value: 'light', label: 'Слабые', tone: 'accent' },
+  { value: 'medium', label: 'Средние', tone: 'accent' },
+  { value: 'heavy', label: 'Сильные', tone: 'accent' },
+]
+const flowModel = computed<CycleFlow | ''>({
+  get: () => form.flow ?? '',
+  set: (v) => {
+    form.flow = v || undefined
+  },
+})
+
+const statusStats = computed<Stat[]>(() => {
+  const result: Stat[] = []
+  if (stats.value.currentCycleDay) result.push({ value: stats.value.currentCycleDay, label: 'день цикла', tone: 'accent' })
+  if (stats.value.avgCycleLengthDays) result.push({ value: stats.value.avgCycleLengthDays, label: 'ср. длина цикла' })
+  if (stats.value.avgPeriodLengthDays) result.push({ value: stats.value.avgPeriodLengthDays, label: 'ср. менструация' })
+  return result
+})
 
 async function save() {
   await cycleRepository.upsertForDate(date, {
@@ -96,11 +130,11 @@ function formatFlow(flow?: CycleFlow): string {
     <IonContent class="ion-padding">
       <IonCard>
         <IonCardHeader>
-          <IonCardTitle>Статус</IonCardTitle>
+          <CardTitle :icon="pulseOutline">Статус</CardTitle>
         </IonCardHeader>
         <IonCardContent>
+          <StatBar v-if="statusStats.length" :stats="statusStats" class="ion-margin-bottom" />
           <template v-if="stats.currentCycleDay">
-            <p>День цикла: {{ stats.currentCycleDay }}</p>
             <template v-if="stats.predictedNextPeriod">
               <p>Ожидаемое начало следующего цикла: {{ stats.predictedNextPeriod }}</p>
               <p>Примерная овуляция: {{ stats.ovulationEstimate }}</p>
@@ -114,17 +148,12 @@ function formatFlow(flow?: CycleFlow): string {
             </p>
           </template>
           <p v-else>Записей пока нет. Отметьте дни цикла ниже, чтобы увидеть статус.</p>
-
-          <template v-if="stats.avgCycleLengthDays || stats.avgPeriodLengthDays">
-            <p v-if="stats.avgCycleLengthDays">Средняя длина цикла: {{ stats.avgCycleLengthDays }} дн.</p>
-            <p v-if="stats.avgPeriodLengthDays">Средняя длительность менструации: {{ stats.avgPeriodLengthDays }} дн.</p>
-          </template>
         </IonCardContent>
       </IonCard>
 
       <IonCard v-if="cycleWeights.length">
         <IonCardHeader>
-          <IonCardTitle>Вес в этом цикле</IonCardTitle>
+          <CardTitle :icon="trendingUpOutline">Вес в этом цикле</CardTitle>
         </IonCardHeader>
         <IonCardContent>
           <p v-for="w in cycleWeights" :key="w.id">{{ w.date }}: {{ w.value }} кг</p>
@@ -133,47 +162,19 @@ function formatFlow(flow?: CycleFlow): string {
 
       <IonCard>
         <IonCardHeader>
-          <IonCardTitle>Сегодня</IonCardTitle>
+          <CardTitle :icon="calendarOutline">Сегодня</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <IonList>
-            <IonItem>
-              <IonSelect v-model="form.flow" label="Выделения" label-placement="stacked" placeholder="Нет">
-                <IonSelectOption :value="undefined">Нет</IonSelectOption>
-                <IonSelectOption value="spotting">Мажущие</IonSelectOption>
-                <IonSelectOption value="light">Слабые</IonSelectOption>
-                <IonSelectOption value="medium">Средние</IonSelectOption>
-                <IonSelectOption value="heavy">Сильные</IonSelectOption>
-              </IonSelect>
-            </IonItem>
-          </IonList>
+          <SectionLabel>Выделения</SectionLabel>
+          <TilePicker v-model="flowModel" :options="flowOptions" />
 
-          <div class="rating-row">
-            <span class="rating-row__label">Боль</span>
-            <IonButton
-              v-for="v in ratingScale"
-              :key="v"
-              size="small"
-              :fill="form.pain === v ? 'solid' : 'outline'"
-              @click="form.pain = v"
-            >
-              {{ v }}
-            </IonButton>
-          </div>
-          <div class="rating-row">
-            <span class="rating-row__label">Радость</span>
-            <IonButton
-              v-for="v in ratingScale"
-              :key="v"
-              size="small"
-              :fill="form.mood === v ? 'solid' : 'outline'"
-              @click="form.mood = v"
-            >
-              {{ v }}
-            </IonButton>
-          </div>
+          <SectionLabel>Боль</SectionLabel>
+          <TilePicker v-model="painModel" :options="ratingOptions" />
 
-          <IonList>
+          <SectionLabel>Радость</SectionLabel>
+          <TilePicker v-model="moodModel" :options="ratingOptions" />
+
+          <IonList class="ion-margin-top">
             <IonItem>
               <IonInput v-model="form.cravings" label="Хочется (необязательно)" label-placement="stacked" placeholder="Шоколад…" />
             </IonItem>
@@ -183,22 +184,25 @@ function formatFlow(flow?: CycleFlow): string {
         </IonCardContent>
       </IonCard>
 
-      <IonList>
-        <IonItem v-for="log in history" :key="log.id">
-          <IonLabel>
-            <h3>{{ log.date }}</h3>
-            <p>
-              <template v-if="log.flow">Выделения: {{ formatFlow(log.flow) }}</template>
-              <template v-if="log.pain"> · Боль {{ log.pain }}/5</template>
-              <template v-if="log.mood"> · Радость {{ log.mood }}/5</template>
-              <template v-if="log.cravings"> · Хочется: {{ log.cravings }}</template>
-            </p>
-          </IonLabel>
-        </IonItem>
-        <IonItem v-if="!history.length">
-          <IonLabel color="medium">Пока нет записей</IonLabel>
-        </IonItem>
-      </IonList>
+      <SectionLabel>История</SectionLabel>
+      <div v-if="history.length" class="history">
+        <EntityCard
+          v-for="log in history"
+          :key="log.id"
+          :avatar-icon="waterOutline"
+          :accent="log.flow ? 'accent' : 'none'"
+          :clickable="false"
+        >
+          <template #title>{{ log.date }}</template>
+          <template v-if="log.cravings" #description>Хочется: {{ log.cravings }}</template>
+          <template v-if="log.flow || log.pain || log.mood" #footer>
+            <Badge v-if="log.flow" tone="accent">{{ formatFlow(log.flow) }}</Badge>
+            <Badge v-if="log.pain">Боль {{ log.pain }}/5</Badge>
+            <Badge v-if="log.mood">Радость {{ log.mood }}/5</Badge>
+          </template>
+        </EntityCard>
+      </div>
+      <EmptyState v-else :icon="waterOutline" title="Пока нет записей" />
     </IonContent>
   </IonPage>
 </template>
@@ -209,16 +213,8 @@ function formatFlow(flow?: CycleFlow): string {
   font-size: 0.85rem;
 }
 
-.rating-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
-}
-
-.rating-row__label {
-  width: 70px;
-  flex-shrink: 0;
+.history {
+  display: grid;
+  gap: 10px;
 }
 </style>
