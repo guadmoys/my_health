@@ -14,6 +14,7 @@ import type {
   HabitLog,
   Meal,
   MealItem,
+  Medicine,
   Note,
   Profile,
   Program,
@@ -59,6 +60,7 @@ export class VitaDatabase extends Dexie {
   habits!: EntityTable<Habit, 'id'>
   habitLogs!: EntityTable<HabitLog, 'id'>
   notes!: EntityTable<Note, 'id'>
+  medicines!: EntityTable<Medicine, 'id'>
   achievements!: EntityTable<Achievement, 'id'>
   dailyStats!: EntityTable<DailyStats, 'date'>
   settings!: EntityTable<Setting, 'key'>
@@ -100,6 +102,11 @@ export class VitaDatabase extends Dexie {
       achievements: 'id, unlockedAt',
       dailyStats: 'date',
       settings: 'key',
+    })
+
+    // v2 schema — adds the home medicine cabinet (§ medicines).
+    this.version(2).stores({
+      medicines: 'id, category, effect',
     })
   }
 }

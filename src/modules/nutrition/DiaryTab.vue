@@ -4,6 +4,7 @@ import dayjs from 'dayjs'
 import { chevronBackOutline, chevronForwardOutline, trashOutline } from 'ionicons/icons'
 import { computed, ref } from 'vue'
 
+import { StatBar } from '@/components/ui'
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { useToast } from '@/composables/useToast'
 import { mealRepository, profileRepository } from '@/database/repositories'
@@ -80,8 +81,14 @@ const dayTotals = computed(() =>
   </div>
 
   <div v-if="nutritionMode === 'full'" class="ion-padding-horizontal totals">
-    Итого: {{ Math.round(dayTotals.kcal) }} ккал · Б {{ Math.round(dayTotals.protein) }} · Ж
-    {{ Math.round(dayTotals.fat) }} · У {{ Math.round(dayTotals.carbs) }}
+    <StatBar
+      :stats="[
+        { value: Math.round(dayTotals.kcal), label: 'ккал', tone: 'accent' },
+        { value: Math.round(dayTotals.protein), label: 'белки' },
+        { value: Math.round(dayTotals.fat), label: 'жиры' },
+        { value: Math.round(dayTotals.carbs), label: 'углеводы' },
+      ]"
+    />
   </div>
 
   <IonList v-for="slot in slots" :key="slot.type">
@@ -120,7 +127,6 @@ const dayTotals = computed(() =>
 }
 
 .totals {
-  color: var(--ion-color-medium);
   margin-bottom: 8px;
 }
 </style>

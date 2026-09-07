@@ -1,23 +1,10 @@
 <script setup lang="ts">
-import {
-  IonButton,
-  IonCheckbox,
-  IonContent,
-  IonHeader,
-  IonItem,
-  IonItemOption,
-  IonItemOptions,
-  IonItemSliding,
-  IonLabel,
-  IonList,
-  IonPage,
-  IonTitle,
-  IonToolbar,
-  modalController,
-} from '@ionic/vue'
+import { IonContent, IonHeader, IonIcon, IonPage, IonTitle, IonToolbar, actionSheetController, modalController } from '@ionic/vue'
 import dayjs from 'dayjs'
+import { checkmark, checkmarkCircleOutline, ellipsisHorizontal } from 'ionicons/icons'
 import { ref, watch } from 'vue'
 
+import { EmptyState, EntityCard, FabButton } from '@/components/ui'
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { habitRepository } from '@/database/repositories'
 import type { Habit, HabitLog } from '@/database/types'
@@ -54,17 +41,20 @@ async function toggle(habit: Habit) {
   logsByHabit.value[habit.id] = await habitRepository.getLogsForRange(habit.id, rangeStart, today())
 }
 
-/** Framed positively, never as a penalty for missed days (§21). */
-function progressText(habit: Habit): string {
+function progress(habit: Habit): { count: number; target: number } {
   const logs = logsByHabit.value[habit.id] ?? []
   if (habit.schedule === 'daily') {
     const last7Start = dayjs().subtract(6, 'day').format(DATE_FORMAT)
-    const count = logs.filter((l) => l.completed && l.date >= last7Start).length
-    return `${count} активных дней из 7`
+    return { count: logs.filter((l) => l.completed && l.date >= last7Start).length, target: 7 }
   }
   const { from: weekStart } = currentWeekRange()
-  const count = logs.filter((l) => l.completed && l.date >= weekStart).length
-  return `${count} из ${habit.targetPerPeriod} на этой неделе`
+  return { count: logs.filter((l) => l.completed && l.date >= weekStart).length, target: habit.targetPerPeriod }
+}
+
+/** Framed positively, never as a penalty for missed days (§21). */
+function progressText(habit: Habit): string {
+  const { count, target } = progress(habit)
+  return habit.schedule === 'daily' ? `${count} активных дней из ${target}` : `${count} из ${target} на этой неделе`
 }
 
 async function openCreateForm() {
@@ -84,6 +74,17 @@ async function openCreateForm() {
 async function archiveHabit(habit: Habit) {
   await habitRepository.archive(habit.id)
 }
+
+async function openActions(habit: Habit) {
+  const sheet = await actionSheetController.create({
+    header: habit.name,
+    buttons: [
+      { text: 'В архив', handler: () => archiveHabit(habit) },
+      { text: 'Отмена', role: 'cancel' },
+    ],
+  })
+  await sheet.present()
+}
 </script>
 
 <template>
@@ -94,28 +95,133 @@ async function archiveHabit(habit: Habit) {
       </IonToolbar>
     </IonHeader>
     <IonContent>
-      <IonList>
-        <IonItemSliding v-for="habit in habits" :key="habit.id">
-          <IonItem>
-            <IonCheckbox slot="start" :checked="isDoneToday(habit)" @ion-change="toggle(habit)" />
-            <IonLabel>
-              <h2>{{ habit.name }}</h2>
-              <p>{{ progressText(habit) }}</p>
-            </IonLabel>
-          </IonItem>
-          <IonItemOptions side="end">
-            <IonItemOption color="medium" @click="archiveHabit(habit)">Архив</IonItemOption>
-          </IonItemOptions>
-        </IonItemSliding>
+      <div class="wrap">
+        <div v-if="habits.length" class="grid">
+          <EntityCard
+            v-for="habit in habits"
+            :key="habit.id"
+            :accent="isDoneToday(habit) ? 'good' : 'none'"
+            :clickable="false"
+          >
+            <template #avatar>
+              <button
+                type="button"
+                class="toggle"
+                :class="{ 'toggle--done': isDoneToday(habit) }"
+                :aria-pressed="isDoneToday(habit)"
+                :aria-label="isDoneToday(habit) ? 'Отметить как не выполнено' : 'Отметить как выполнено сегодня'"
+                @click="toggle(habit)"
+              >
+                <IonIcon v-if="isDoneToday(habit)" :icon="checkmark" aria-hidden="true" />
+              </button>
+            </template>
+            <template #title>{{ habit.name }}</template>
+            <template #trailing>
+              <button type="button" class="icon-btn" aria-label="Действия" @click="openActions(habit)">
+                <IonIcon :icon="ellipsisHorizontal" aria-hidden="true" />
+              </button>
+            </template>
+            <template #footer>
+              <div class="progress">
+                <span class="progress-text">{{ progressText(habit) }}</span>
+                <span class="progress-track">
+                  <span
+                    class="progress-fill"
+                    :style="{ width: `${Math.min(100, (progress(habit).count / progress(habit).target) * 100)}%` }"
+                  />
+                </span>
+              </div>
+            </template>
+          </EntityCard>
+        </div>
 
-        <IonItem v-if="!habits.length">
-          <IonLabel color="medium">Привычек пока нет. Создайте первую кнопкой ниже.</IonLabel>
-        </IonItem>
-      </IonList>
-
-      <div class="ion-padding">
-        <IonButton expand="block" @click="openCreateForm">+ Новая привычка</IonButton>
+        <EmptyState
+          v-else
+          :icon="checkmarkCircleOutline"
+          title="Привычек пока нет"
+          note="Создайте первую кнопкой ниже — и отмечайте выполнение одним касанием."
+        />
       </div>
+
+      <FabButton @click="openCreateForm">Новая привычка</FabButton>
     </IonContent>
   </IonPage>
 </template>
+
+<style scoped>
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 16px 96px;
+}
+
+.grid {
+  display: grid;
+  gap: 10px;
+}
+
+.toggle {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--ion-color-medium, #92949c);
+  background: transparent;
+  color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease, border-color 0.12s ease;
+}
+
+.toggle:active {
+  transform: scale(0.9);
+}
+
+.toggle ion-icon {
+  font-size: 1.1rem;
+}
+
+.toggle--done {
+  border-color: var(--ion-color-success);
+  background: var(--ion-color-success);
+  color: #fff;
+}
+
+.icon-btn {
+  border: none;
+  background: transparent;
+  color: inherit;
+  opacity: 0.5;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+}
+
+.progress {
+  width: 100%;
+}
+
+.progress-text {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.88rem;
+  opacity: 0.8;
+}
+
+.progress-track {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ion-color-light, #f0f0f0);
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--ion-color-success);
+  transition: width 0.2s ease;
+}
+</style>

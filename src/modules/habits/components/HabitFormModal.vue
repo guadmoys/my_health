@@ -7,14 +7,14 @@ import {
   IonInput,
   IonItem,
   IonList,
-  IonSelect,
-  IonSelectOption,
   IonTitle,
   IonToolbar,
   modalController,
 } from '@ionic/vue'
+import { calendarNumberOutline, repeatOutline } from 'ionicons/icons'
 import { computed, reactive, ref } from 'vue'
 
+import { SectionLabel, TilePicker, type TileOption } from '@/components/ui'
 import type { HabitSchedule } from '@/database/types'
 
 import { habitFormSchema } from '../schemas'
@@ -24,6 +24,11 @@ const form = reactive({
   schedule: 'daily' as HabitSchedule,
   targetPerPeriod: 1 as string | number,
 })
+
+const scheduleOptions: TileOption<HabitSchedule>[] = [
+  { value: 'daily', icon: repeatOutline, label: 'Ежедневно', tone: 'accent' },
+  { value: 'weekly', icon: calendarNumberOutline, label: 'Еженедельно', tone: 'accent' },
+]
 
 const errors = ref<string[]>([])
 
@@ -69,13 +74,11 @@ function cancel() {
       <IonItem>
         <IonInput v-model="form.name" label="Название" label-placement="stacked" placeholder="Пить воду" />
       </IonItem>
+    </IonList>
+    <SectionLabel>Периодичность</SectionLabel>
+    <TilePicker v-model="form.schedule" :options="scheduleOptions" />
+    <IonList v-if="showTarget" inset class="ion-margin-top">
       <IonItem>
-        <IonSelect v-model="form.schedule" label="Периодичность" label-placement="stacked">
-          <IonSelectOption value="daily">Ежедневно</IonSelectOption>
-          <IonSelectOption value="weekly">Еженедельно</IonSelectOption>
-        </IonSelect>
-      </IonItem>
-      <IonItem v-if="showTarget">
         <IonInput v-model="form.targetPerPeriod" type="number" label="Раз в неделю" label-placement="stacked" />
       </IonItem>
     </IonList>

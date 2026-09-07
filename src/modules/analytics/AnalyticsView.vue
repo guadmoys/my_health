@@ -1,8 +1,21 @@
 <script setup lang="ts">
-import { IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonContent, IonHeader, IonPage, IonSegment, IonSegmentButton, IonTitle, IonToolbar } from '@ionic/vue'
+import { IonCard, IonCardContent, IonCardHeader, IonContent, IonHeader, IonPage, IonSegment, IonSegmentButton, IonTitle, IonToolbar } from '@ionic/vue'
 import dayjs from 'dayjs'
+import {
+  barbellOutline,
+  calendarOutline,
+  checkmarkCircleOutline,
+  footstepsOutline,
+  happyOutline,
+  moonOutline,
+  pulseOutline,
+  restaurantOutline,
+  trendingUpOutline,
+  waterOutline,
+} from 'ionicons/icons'
 import { computed, ref } from 'vue'
 
+import { CardTitle, StatBar, type Stat } from '@/components/ui'
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { cycleRepository, dailyStatsRepository, profileRepository, settingsRepository, wellbeingRepository } from '@/database/repositories'
 import type { CycleLog, DailyStats, WellbeingLog } from '@/database/types'
@@ -113,6 +126,66 @@ const avgCycleMood = computed(() => average(periodCycleLogs.value, (l) => l.mood
 function fmt(n: number | undefined, digits = 0): string {
   return n === undefined ? '—' : n.toFixed(digits)
 }
+
+const weekStatsBar = computed<Stat[]>(() => {
+  const result: Stat[] = [
+    { value: weekWorkouts.value, label: 'тренировки', tone: 'accent' },
+    { value: weekActiveDays.value, label: 'активных дней' },
+  ]
+  if (weekAvgSleep.value) result.push({ value: formatMinutes(weekAvgSleep.value), label: 'средний сон' })
+  if (weekHabitsPercent.value !== undefined) result.push({ value: `${weekHabitsPercent.value}%`, label: 'привычки' })
+  return result
+})
+
+const workoutsStatsBar = computed<Stat[]>(() => [
+  { value: totalWorkouts.value, label: 'тренировок', tone: 'accent' },
+  { value: totalWorkoutMinutes.value, label: 'минут' },
+  { value: Math.round(totalWorkoutVolume.value), label: 'объём, кг' },
+  { value: `${workoutDays.value}/${totalDays.value}`, label: 'регулярность' },
+])
+
+const nutritionStatsBar = computed<Stat[]>(() => [
+  { value: fmt(avgCalories.value), label: 'ккал', tone: 'accent' },
+  { value: fmt(avgProtein.value), label: 'белки' },
+  { value: fmt(avgFat.value), label: 'жиры' },
+  { value: fmt(avgCarbs.value), label: 'углеводы' },
+])
+
+const weightStatsBar = computed<Stat[]>(() => [
+  { value: `${fmt(avgWeight.value, 1)} кг`, label: 'среднее', tone: 'accent' },
+  { value: `${fmt(minWeight.value, 1)}–${fmt(maxWeight.value, 1)}`, label: 'диапазон, кг' },
+])
+
+const activityStatsBar = computed<Stat[]>(() => {
+  const result: Stat[] = [{ value: `${activeDaysCount.value}/${totalDays.value}`, label: 'дней активности', tone: 'accent' }]
+  if (avgSteps.value) result.push({ value: Math.round(avgSteps.value), label: 'шагов в среднем' })
+  if (stepsGoal.value) result.push({ value: `${daysGoalMet.value}/${totalDays.value}`, label: 'цель достигнута' })
+  return result
+})
+
+const waterStatsBar = computed<Stat[]>(() => [
+  { value: `${Math.round(avgWater.value ?? 0)} мл`, label: 'среднее', tone: 'accent' },
+  { value: `${daysWithWater.value}/${totalDays.value}`, label: 'дней с записью' },
+])
+
+const wellbeingStatsBar = computed<Stat[]>(() => {
+  const result: Stat[] = []
+  if (avgEnergy.value !== undefined) result.push({ value: `${fmt(avgEnergy.value, 1)}/5`, label: 'энергия', tone: 'accent' })
+  if (avgMood.value !== undefined) result.push({ value: `${fmt(avgMood.value, 1)}/5`, label: 'настроение' })
+  if (avgFatigue.value !== undefined) result.push({ value: `${fmt(avgFatigue.value, 1)}/5`, label: 'усталость' })
+  return result
+})
+
+const cycleStatsBar = computed<Stat[]>(() => {
+  const result: Stat[] = []
+  if (cycleStats.value.avgCycleLengthDays !== undefined)
+    result.push({ value: cycleStats.value.avgCycleLengthDays, label: 'длина цикла, дн.', tone: 'accent' })
+  if (cycleStats.value.avgPeriodLengthDays !== undefined)
+    result.push({ value: cycleStats.value.avgPeriodLengthDays, label: 'менструация, дн.' })
+  if (avgCyclePain.value !== undefined) result.push({ value: `${fmt(avgCyclePain.value, 1)}/5`, label: 'боль' })
+  if (avgCycleMood.value !== undefined) result.push({ value: `${fmt(avgCycleMood.value, 1)}/5`, label: 'настроение' })
+  return result
+})
 </script>
 
 <template>
@@ -125,14 +198,11 @@ function fmt(n: number | undefined, digits = 0): string {
     <IonContent class="ion-padding">
       <IonCard>
         <IonCardHeader>
-          <IonCardTitle>Итоги недели</IonCardTitle>
+          <CardTitle :icon="calendarOutline">Итоги недели</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <p>Тренировки: {{ weekWorkouts }}</p>
-          <p>Активных дней: {{ weekActiveDays }}</p>
-          <p v-if="weekAvgSleep">Средний сон: {{ formatMinutes(weekAvgSleep) }}</p>
-          <p v-if="weekHabitsPercent !== undefined">Привычки: {{ weekHabitsPercent }}%</p>
-          <p v-if="weekWeightTrend">Вес: {{ weekWeightTrend }}</p>
+          <StatBar :stats="weekStatsBar" />
+          <p v-if="weekWeightTrend" class="extra-line">Вес: {{ weekWeightTrend }}</p>
         </IonCardContent>
       </IonCard>
 
@@ -144,97 +214,92 @@ function fmt(n: number | undefined, digits = 0): string {
 
       <IonCard>
         <IonCardHeader>
-          <IonCardTitle>Тренировки</IonCardTitle>
+          <CardTitle :icon="barbellOutline">Тренировки</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <p>Количество: {{ totalWorkouts }}</p>
-          <p>Минуты: {{ totalWorkoutMinutes }}</p>
-          <p>Объём: {{ Math.round(totalWorkoutVolume) }} кг</p>
-          <p>Регулярность: {{ workoutDays }} из {{ totalDays }} дней</p>
+          <StatBar :stats="workoutsStatsBar" />
         </IonCardContent>
       </IonCard>
 
       <IonCard v-if="nutritionMode === 'full'">
         <IonCardHeader>
-          <IonCardTitle>Питание</IonCardTitle>
+          <CardTitle :icon="restaurantOutline">Питание</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <p>Среднее: {{ fmt(avgCalories) }} ккал</p>
-          <p>Белки {{ fmt(avgProtein) }} · Жиры {{ fmt(avgFat) }} · Углеводы {{ fmt(avgCarbs) }}</p>
+          <StatBar :stats="nutritionStatsBar" />
         </IonCardContent>
       </IonCard>
 
       <IonCard v-if="avgWeight !== undefined">
         <IonCardHeader>
-          <IonCardTitle>Вес</IonCardTitle>
+          <CardTitle :icon="trendingUpOutline">Вес</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <p>Среднее: {{ fmt(avgWeight, 1) }} кг</p>
-          <p>Диапазон: {{ fmt(minWeight, 1) }}–{{ fmt(maxWeight, 1) }} кг</p>
+          <StatBar :stats="weightStatsBar" />
         </IonCardContent>
       </IonCard>
 
       <IonCard v-if="avgSleepMinutes !== undefined">
         <IonCardHeader>
-          <IonCardTitle>Сон</IonCardTitle>
+          <CardTitle :icon="moonOutline">Сон</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <p>Средняя длительность: {{ formatMinutes(avgSleepMinutes) }}</p>
+          <StatBar :stats="[{ value: formatMinutes(avgSleepMinutes), label: 'средняя длительность', tone: 'accent' }]" />
         </IonCardContent>
       </IonCard>
 
       <IonCard>
         <IonCardHeader>
-          <IonCardTitle>Активность</IonCardTitle>
+          <CardTitle :icon="footstepsOutline">Активность</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <p>Дни активности: {{ activeDaysCount }} из {{ totalDays }}</p>
-          <p v-if="avgSteps">В среднем: {{ Math.round(avgSteps) }} шагов</p>
-          <p v-if="stepsGoal">Цель по шагам достигнута: {{ daysGoalMet }} из {{ totalDays }} дней</p>
+          <StatBar :stats="activityStatsBar" />
         </IonCardContent>
       </IonCard>
 
       <IonCard>
         <IonCardHeader>
-          <IonCardTitle>Вода</IonCardTitle>
+          <CardTitle :icon="waterOutline">Вода</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <p>Среднее: {{ Math.round(avgWater ?? 0) }} мл</p>
-          <p>Дней с записью: {{ daysWithWater }} из {{ totalDays }}</p>
+          <StatBar :stats="waterStatsBar" />
         </IonCardContent>
       </IonCard>
 
       <IonCard v-if="habitsPercent !== undefined">
         <IonCardHeader>
-          <IonCardTitle>Привычки</IonCardTitle>
+          <CardTitle :icon="checkmarkCircleOutline">Привычки</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <p>Выполнено: {{ habitsPercent }}%</p>
+          <StatBar :stats="[{ value: `${habitsPercent}%`, label: 'выполнено', tone: 'accent' }]" />
         </IonCardContent>
       </IonCard>
 
       <IonCard v-if="avgEnergy !== undefined || avgMood !== undefined">
         <IonCardHeader>
-          <IonCardTitle>Самочувствие</IonCardTitle>
+          <CardTitle :icon="happyOutline">Самочувствие</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <p v-if="avgEnergy !== undefined">Энергия: {{ fmt(avgEnergy, 1) }}/5</p>
-          <p v-if="avgMood !== undefined">Настроение: {{ fmt(avgMood, 1) }}/5</p>
-          <p v-if="avgFatigue !== undefined">Усталость: {{ fmt(avgFatigue, 1) }}/5</p>
+          <StatBar :stats="wellbeingStatsBar" />
         </IonCardContent>
       </IonCard>
 
       <IonCard v-if="cycleStats.avgCycleLengthDays !== undefined || avgCyclePain !== undefined || avgCycleMood !== undefined">
         <IonCardHeader>
-          <IonCardTitle>Цикл</IonCardTitle>
+          <CardTitle :icon="pulseOutline">Цикл</CardTitle>
         </IonCardHeader>
         <IonCardContent>
-          <p v-if="cycleStats.avgCycleLengthDays !== undefined">Средняя длина цикла: {{ cycleStats.avgCycleLengthDays }} дн.</p>
-          <p v-if="cycleStats.avgPeriodLengthDays !== undefined">Средняя длина менструации: {{ cycleStats.avgPeriodLengthDays }} дн.</p>
-          <p v-if="avgCyclePain !== undefined">Боль (за период): {{ fmt(avgCyclePain, 1) }}/5</p>
-          <p v-if="avgCycleMood !== undefined">Настроение в цикле (за период): {{ fmt(avgCycleMood, 1) }}/5</p>
+          <StatBar :stats="cycleStatsBar" />
         </IonCardContent>
       </IonCard>
     </IonContent>
   </IonPage>
 </template>
+
+<style scoped>
+.extra-line {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+</style>

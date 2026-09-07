@@ -4,7 +4,6 @@ import {
   IonCard,
   IonCardContent,
   IonCardHeader,
-  IonCardTitle,
   IonCheckbox,
   IonContent,
   IonHeader,
@@ -13,15 +12,26 @@ import {
   IonItem,
   IonPage,
   IonProgressBar,
-  IonText,
   IonTitle,
   IonToolbar,
 } from '@ionic/vue'
-import { closeOutline } from 'ionicons/icons'
+import {
+  barbellOutline,
+  batteryHalfOutline,
+  closeOutline,
+  flagOutline,
+  footstepsOutline,
+  happyOutline,
+  moonOutline,
+  restaurantOutline,
+  sadOutline,
+  waterOutline,
+} from 'ionicons/icons'
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { presentQuickAdd } from '@/components/layout/quick-add'
+import { CardTitle, StatBar, TilePicker, type Stat, type TileOption } from '@/components/ui'
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { useToast } from '@/composables/useToast'
 import {
@@ -64,6 +74,14 @@ const wellbeing = useLiveQuery(() => wellbeingRepository.getByDate(date), undefi
 
 const waterMl = computed(() => dailyStats.value?.waterMl ?? 0)
 const ratingScale = [1, 2, 3, 4, 5] as const
+const ratingOptions: TileOption<number>[] = ratingScale.map((v) => ({ value: v, label: String(v), tone: 'accent' }))
+
+const macroStats = computed<Stat[]>(() => [
+  { value: dailyStats.value?.calories ?? 0, label: 'ккал', tone: 'accent' },
+  { value: dailyStats.value?.protein ?? 0, label: 'белки' },
+  { value: dailyStats.value?.fat ?? 0, label: 'жиры' },
+  { value: dailyStats.value?.carbs ?? 0, label: 'углеводы' },
+])
 
 // --- Water ---
 async function addWater(amountMl: number) {
@@ -166,7 +184,7 @@ void checkOngoingAchievements().then(async (unlocked) => {
       <div class="today-stack">
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Цель</IonCardTitle>
+            <CardTitle :icon="flagOutline">Цель</CardTitle>
           </IonCardHeader>
           <IonCardContent>
             <template v-if="primaryGoal">
@@ -188,37 +206,20 @@ void checkOngoingAchievements().then(async (unlocked) => {
 
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Питание</IonCardTitle>
+            <CardTitle :icon="restaurantOutline">Питание</CardTitle>
           </IonCardHeader>
           <IonCardContent>
             <template v-if="nutritionMode === 'hidden' || nutritionMode === 'simplified'">
               <p>Приёмов пищи сегодня: {{ mealCount }}</p>
             </template>
-            <div v-else class="stat-row">
-              <div class="stat">
-                <IonText color="medium"><p>Ккал</p></IonText>
-                <p class="stat__value">{{ dailyStats?.calories ?? 0 }}</p>
-              </div>
-              <div class="stat">
-                <IonText color="medium"><p>Белки</p></IonText>
-                <p class="stat__value">{{ dailyStats?.protein ?? 0 }}</p>
-              </div>
-              <div class="stat">
-                <IonText color="medium"><p>Жиры</p></IonText>
-                <p class="stat__value">{{ dailyStats?.fat ?? 0 }}</p>
-              </div>
-              <div class="stat">
-                <IonText color="medium"><p>Углеводы</p></IonText>
-                <p class="stat__value">{{ dailyStats?.carbs ?? 0 }}</p>
-              </div>
-            </div>
+            <StatBar v-else :stats="macroStats" />
             <IonButton fill="clear" size="small" @click="router.push('/nutrition')">Открыть дневник питания →</IonButton>
           </IonCardContent>
         </IonCard>
 
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Вода</IonCardTitle>
+            <CardTitle :icon="waterOutline">Вода</CardTitle>
           </IonCardHeader>
           <IonCardContent>
             <p class="stat__value">{{ waterMl }} мл</p>
@@ -232,7 +233,7 @@ void checkOngoingAchievements().then(async (unlocked) => {
 
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Сон</IonCardTitle>
+            <CardTitle :icon="moonOutline">Сон</CardTitle>
           </IonCardHeader>
           <IonCardContent>
             <p v-if="dailyStats?.sleepMinutes">
@@ -255,7 +256,7 @@ void checkOngoingAchievements().then(async (unlocked) => {
 
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Активность</IonCardTitle>
+            <CardTitle :icon="footstepsOutline">Активность</CardTitle>
           </IonCardHeader>
           <IonCardContent>
             <p v-if="dailyStats?.steps">
@@ -272,7 +273,7 @@ void checkOngoingAchievements().then(async (unlocked) => {
 
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Тренировка</IonCardTitle>
+            <CardTitle :icon="barbellOutline">Тренировка</CardTitle>
           </IonCardHeader>
           <IonCardContent>
             <p v-if="activeSession">Есть незавершённая тренировка.</p>
@@ -283,44 +284,32 @@ void checkOngoingAchievements().then(async (unlocked) => {
 
         <IonCard>
           <IonCardHeader>
-            <IonCardTitle>Самочувствие</IonCardTitle>
+            <CardTitle :icon="happyOutline">Самочувствие</CardTitle>
           </IonCardHeader>
           <IonCardContent>
             <div class="rating-row">
-              <span class="rating-row__label">Энергия</span>
-              <IonButton
-                v-for="v in ratingScale"
-                :key="v"
-                size="small"
-                :fill="wellbeing?.energy === v ? 'solid' : 'outline'"
-                @click="setWellbeingRating('energy', v)"
-              >
-                {{ v }}
-              </IonButton>
+              <span class="rating-row__label"><IonIcon :icon="happyOutline" aria-hidden="true" /> Настроение</span>
+              <TilePicker
+                :model-value="wellbeing?.mood ?? 0"
+                :options="ratingOptions"
+                @update:model-value="setWellbeingRating('mood', $event)"
+              />
             </div>
             <div class="rating-row">
-              <span class="rating-row__label">Настроение</span>
-              <IonButton
-                v-for="v in ratingScale"
-                :key="v"
-                size="small"
-                :fill="wellbeing?.mood === v ? 'solid' : 'outline'"
-                @click="setWellbeingRating('mood', v)"
-              >
-                {{ v }}
-              </IonButton>
+              <span class="rating-row__label"><IonIcon :icon="batteryHalfOutline" aria-hidden="true" /> Энергия</span>
+              <TilePicker
+                :model-value="wellbeing?.energy ?? 0"
+                :options="ratingOptions"
+                @update:model-value="setWellbeingRating('energy', $event)"
+              />
             </div>
             <div class="rating-row">
-              <span class="rating-row__label">Усталость</span>
-              <IonButton
-                v-for="v in ratingScale"
-                :key="v"
-                size="small"
-                :fill="wellbeing?.fatigue === v ? 'solid' : 'outline'"
-                @click="setWellbeingRating('fatigue', v)"
-              >
-                {{ v }}
-              </IonButton>
+              <span class="rating-row__label"><IonIcon :icon="sadOutline" aria-hidden="true" /> Усталость</span>
+              <TilePicker
+                :model-value="wellbeing?.fatigue ?? 0"
+                :options="ratingOptions"
+                @update:model-value="setWellbeingRating('fatigue', $event)"
+              />
             </div>
             <IonItem lines="none">
               <IonCheckbox :checked="wellbeing?.discomfort ?? false" @ion-change="toggleDiscomfort">
@@ -354,16 +343,6 @@ void checkOngoingAchievements().then(async (unlocked) => {
   gap: 8px;
 }
 
-.stat-row {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.stat p {
-  margin: 0;
-}
-
 .stat__value {
   font-size: 1.5rem;
   font-weight: 600;
@@ -378,16 +357,20 @@ void checkOngoingAchievements().then(async (unlocked) => {
 }
 
 .rating-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.rating-row:last-of-type {
+  margin-bottom: 0;
 }
 
 .rating-row__label {
-  width: 90px;
-  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  opacity: 0.8;
 }
 
 .inline-input {

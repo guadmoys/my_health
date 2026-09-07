@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { IonButton, IonInput, IonItem, IonList, IonSegment, IonSegmentButton, IonText } from '@ionic/vue'
+import { IonButton, IonInput, IonItem, IonList, IonSegment, IonSegmentButton } from '@ionic/vue'
 import type { EChartsCoreOption } from 'echarts/core'
+import { trendingUpOutline } from 'ionicons/icons'
 import { computed, ref } from 'vue'
 
+import { EmptyState, StatBar, type Stat } from '@/components/ui'
 import { useEChart } from '@/composables/useEChart'
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { useToast } from '@/composables/useToast'
@@ -49,6 +51,19 @@ const trendDelta = computed(() => {
   return Math.round((latest.value.value - first.value.value) * 10) / 10
 })
 
+const stats = computed<Stat[]>(() => {
+  if (!latest.value) return []
+  const result: Stat[] = [{ value: `${latest.value.value} кг`, label: latest.value.date, tone: 'accent' }]
+  if (trendDelta.value !== undefined) {
+    result.push({
+      value: `${trendDelta.value > 0 ? '+' : ''}${trendDelta.value} кг`,
+      label: 'за период',
+      tone: trendDelta.value > 0 ? 'bad' : 'good',
+    })
+  }
+  return result
+})
+
 const weightInput = ref<string | number>('')
 const noteInput = ref('')
 
@@ -76,15 +91,10 @@ async function logWeight() {
   </div>
 
   <div v-if="logs.length" class="ion-padding-horizontal">
-    <p v-if="latest">
-      Последний: <strong>{{ latest.value }} кг</strong> ({{ latest.date }})
-      <IonText v-if="trendDelta !== undefined" :color="trendDelta > 0 ? 'warning' : 'success'">
-        · {{ trendDelta > 0 ? '+' : '' }}{{ trendDelta }} кг за период
-      </IonText>
-    </p>
+    <StatBar v-if="stats.length" :stats="stats" class="ion-margin-bottom" />
     <div ref="chartEl" style="height: 220px"></div>
   </div>
-  <p v-else class="ion-padding-horizontal">Записей веса за этот период ещё нет.</p>
+  <EmptyState v-else :icon="trendingUpOutline" title="Пока нет записей" note="Записей веса за этот период ещё нет." />
 
   <IonList>
     <IonItem>

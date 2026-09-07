@@ -38,6 +38,7 @@ describe('VitaDatabase schema', () => {
         'dailyStats',
         'settings',
         'cycleLogs',
+        'medicines',
       ].sort(),
     )
 

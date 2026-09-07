@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { IonButton, IonInput, IonItem, IonLabel, IonList, IonSegment, IonSegmentButton, IonSelect, IonSelectOption } from '@ionic/vue'
+import { IonButton, IonInput, IonItem, IonLabel, IonList, IonSegment, IonSegmentButton } from '@ionic/vue'
+import { bicycleOutline, ellipsisHorizontalOutline, fitnessOutline, footstepsOutline, walkOutline, waterOutline } from 'ionicons/icons'
 import { computed, ref } from 'vue'
 
+import { EmptyState, SectionLabel, StatBar, TilePicker, type Stat, type TileOption } from '@/components/ui'
 import { useLiveQuery } from '@/composables/useLiveQuery'
 import { useToast } from '@/composables/useToast'
 import { activityRepository, settingsRepository } from '@/database/repositories'
@@ -53,6 +55,22 @@ const typeLabels: Record<ActivityType, string> = {
   other: 'Другое',
 }
 
+const typeOptions: TileOption<ActivityType>[] = [
+  { value: 'steps', label: 'Шаги', icon: footstepsOutline, tone: 'accent' },
+  { value: 'walk', label: 'Прогулка', icon: walkOutline, tone: 'accent' },
+  { value: 'run', label: 'Бег', icon: fitnessOutline, tone: 'accent' },
+  { value: 'bike', label: 'Велосипед', icon: bicycleOutline, tone: 'accent' },
+  { value: 'swim', label: 'Плавание', icon: waterOutline, tone: 'accent' },
+  { value: 'other', label: 'Другое', icon: ellipsisHorizontalOutline, tone: 'accent' },
+]
+
+const stats = computed<Stat[]>(() => {
+  if (!logs.value.length) return []
+  const result: Stat[] = [{ value: activeDays.value, label: 'активных дней', tone: 'accent' }]
+  if (avgSteps.value) result.push({ value: avgSteps.value, label: 'шагов в среднем' })
+  return result
+})
+
 const typeInput = ref<ActivityType>('steps')
 const valueInput = ref<string | number>('')
 const durationInput = ref<string | number>('')
@@ -83,12 +101,9 @@ async function logActivity() {
   </div>
 
   <div class="ion-padding-horizontal">
-    <p v-if="logs.length">
-      Активных дней: <strong>{{ activeDays }}</strong>
-      <template v-if="avgSteps"> · в среднем {{ avgSteps }} шагов</template>
-    </p>
-    <p v-else>Записей активности за этот период ещё нет.</p>
-    <p v-if="stepsGoal">Цель по шагам достигнута: {{ daysGoalMet }} из {{ stepLogs.length }} дней с записью шагов</p>
+    <StatBar v-if="stats.length" :stats="stats" />
+    <EmptyState v-else :icon="footstepsOutline" title="Пока нет записей" note="Записей активности за этот период ещё нет." />
+    <p v-if="stepsGoal" class="goal-note">Цель по шагам достигнута: {{ daysGoalMet }} из {{ stepLogs.length }} дней с записью шагов</p>
   </div>
 
   <IonList>
@@ -101,12 +116,11 @@ async function logActivity() {
     </IonItem>
   </IonList>
 
+  <div class="ion-padding-horizontal">
+    <SectionLabel>Тип активности</SectionLabel>
+    <TilePicker v-model="typeInput" :options="typeOptions" />
+  </div>
   <IonList>
-    <IonItem>
-      <IonSelect v-model="typeInput" label="Тип" label-placement="stacked">
-        <IonSelectOption v-for="(label, value) in typeLabels" :key="value" :value="value">{{ label }}</IonSelectOption>
-      </IonSelect>
-    </IonItem>
     <IonItem>
       <IonInput
         v-model="valueInput"
@@ -138,3 +152,11 @@ async function logActivity() {
     <IonButton expand="block" fill="outline" @click="saveStepsGoal">Сохранить цель</IonButton>
   </div>
 </template>
+
+<style scoped>
+.goal-note {
+  font-size: 0.85rem;
+  opacity: 0.75;
+  margin-top: 8px;
+}
+</style>
